@@ -1,0 +1,47 @@
+{
+  "name": "cpy",
+  "version": "0.0.0",
+  "description": "Copy files",
+  "license": "MIT",
+  "repository": "sindresorhus/cpy",
+  "bin": {
+    "cpy": "cli.js"
+  },
+  "author": {
+    "name": "Sindre Sorhus",
+    "email": "sindresorhus@gmail.com",
+    "url": "http://sindresorhus.com"
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "files": [
+    "index.js",
+    "cli.js"
+  ],
+  "keywords": [
+    "cli",
+    "bin",
+    "copy",
+    "cp",
+    "cpy",
+    "file",
+    "files",
+    "clone",
+    "fs",
+    "stream",
+    "glob"
+  ],
+  "dependencies": {
+    "cp-file": "^0.1.1",
+    "each-async": "^0.1.3",
+    "globby": "^0.1.1",
+    "minimist": "^0.2.0"
+  },
+  "devDependencies": {
+    "mocha": "*"
+  }
+}
