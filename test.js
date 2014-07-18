@@ -4,11 +4,24 @@ var fs = require('fs');
 var cpy = require('./');
 
 afterEach(function () {
-	try {
-		fs.unlinkSync('tmp/license');
-		fs.unlinkSync('tmp/package.json');
-	} catch (err) {}
-	fs.rmdirSync('tmp');
+	[
+		'tmp/license',
+		'tmp/package.json',
+		'tmp/cwd/hello.js',
+		'tmp/hello.js'
+	].forEach(function(path) {
+		try {
+			fs.unlinkSync(path);
+		} catch (err) {}
+	});
+	[
+		'tmp/cwd',
+		'tmp'
+	].forEach(function(path) {
+		try {
+			fs.rmdirSync(path);
+		} catch (err) {}
+	});
 });
 
 it('should copy files', function (cb) {
@@ -23,6 +36,23 @@ it('should copy files', function (cb) {
 		assert.strictEqual(
 			fs.readFileSync('package.json', 'utf8'),
 			fs.readFileSync('tmp/package.json', 'utf8')
+		);
+
+		cb();
+	});
+});
+
+it('should respect cwd', function (cb) {
+	fs.mkdirSync('tmp');
+	fs.mkdirSync('tmp/cwd');
+	fs.writeFileSync('tmp/cwd/hello.js', 'console.log("hello");');
+
+	cpy(['hello.js'], 'tmp', {cwd: 'tmp/cwd'}, function (err) {
+		assert(!err, err);
+
+		assert.strictEqual(
+			fs.readFileSync('tmp/cwd/hello.js', 'utf8'),
+			fs.readFileSync('tmp/hello.js', 'utf8')
 		);
 
 		cb();

@@ -16,6 +16,8 @@ module.exports = function (src, dest, opts, cb) {
 
 	cb = cb || function () {};
 
+	var cwd = opts.cwd || '';
+
 	globby(src, opts, function (err, files) {
 		if (err) {
 			cb(err);
@@ -23,7 +25,7 @@ module.exports = function (src, dest, opts, cb) {
 		}
 
 		eachAsync(files, function (el, i, next) {
-			cpFile(el, path.join(dest, el), opts, next);
+			cpFile(path.join(cwd, el), path.join(dest, el), opts, next);
 		}, cb);
 	});
 };
