@@ -49,6 +49,14 @@ Type: `object`
 
 Options are passed to [cp-file](https://github.com/sindresorhus/cp-file#options) and [glob](https://github.com/isaacs/node-glob#options).
 
+##### cwd
+
+Type: `string`  
+Default: `process.cwd()`
+
+The working directory to look for the source files.
+
+
 #### callback(err)
 
 Type: `function`
