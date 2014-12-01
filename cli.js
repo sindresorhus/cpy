@@ -1,14 +1,10 @@
 #!/usr/bin/env node
 'use strict';
-var argv = require('minimist')(process.argv.slice(2));
-var pkg = require('./package.json');
+var meow = require('meow');
 var cpy = require('./');
-var input = argv._;
 
-function help() {
-	console.log([
-		pkg.description,
-		'',
+var cli = meow({
+	help: [
 		'Usage',
 		'  $ cpy <source> <destination> [--no-overwrite]',
 		'',
@@ -16,17 +12,9 @@ function help() {
 		'  $ cpy \'src/*.png\' dist',
 		'',
 		'<source> can contain globs if quoted'
-	].join('\n'));
-}
+	].join('\n')
+}, {
+	string: ['_']
+});
 
-if (input.length === 0 || argv.help) {
-	help();
-	return;
-}
-
-if (argv.version) {
-	console.log(pkg.version);
-	return;
-}
-
-cpy([input[0]], input[1], {overwrite: argv.overwrite});
+cpy([cli.input[0]], cli.input[1], {overwrite: cli.flags.overwrite});

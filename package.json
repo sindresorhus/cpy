@@ -36,10 +36,10 @@
     "glob"
   ],
   "dependencies": {
-    "cp-file": "^0.1.1",
-    "each-async": "^0.1.3",
-    "globby": "^0.1.1",
-    "minimist": "^0.2.0"
+    "cp-file": "^1.0.0",
+    "each-async": "^1.1.0",
+    "globby": "^1.0.0",
+    "meow": "^2.0.0"
   },
   "devDependencies": {
     "mocha": "*"
