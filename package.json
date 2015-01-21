@@ -36,7 +36,7 @@
     "glob"
   ],
   "dependencies": {
-    "cp-file": "^1.0.0",
+    "cp-file": "^2.0.0",
     "each-async": "^1.1.0",
     "globby": "^1.0.0",
     "meow": "^2.0.0"
