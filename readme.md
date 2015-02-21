@@ -56,6 +56,13 @@ Default: `process.cwd()`
 
 The working directory to look for the source files.
 
+##### parents
+
+Type: `boolean`  
+Default: `false`
+
+Keep the path structure when copying files.
+
 
 #### callback(err)
 
