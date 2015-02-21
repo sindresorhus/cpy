@@ -25,7 +25,8 @@ module.exports = function (src, dest, opts, cb) {
 		}
 
 		eachAsync(files, function (el, i, next) {
-			cpFile(path.join(cwd, el), path.join(dest, el), opts, next);
+			var file = opts.parents ? el : path.basename(el);
+			cpFile(path.join(cwd, el), path.join(dest, file), opts, next);
 		}, cb);
 	});
 };
