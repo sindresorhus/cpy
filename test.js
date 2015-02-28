@@ -1,7 +1,7 @@
 'use strict';
 var assert = require('assert');
 var fs = require('fs');
-var spawnSync = require('child_process').spawnSync;
+var spawn = require('child_process').spawn;
 var cpy = require('./');
 
 afterEach(function () {
@@ -76,10 +76,16 @@ describe('api', function() {
 
 describe('cli', function() {
 	it('should output an error message and return a non-zero exit status on ' +
-		' missing file operands', function () {
-		var sut = spawnSync('./cli.js');
-		var err = String(sut.stderr);
-		assert.ok(sut.status !== 0, 'unexpected exit status: ' + sut.status);
-		assert.notStrictEqual(err, '', err);
+		' missing file operands', function (done) {
+		var err = '';
+		var sut = spawn('./cli.js');
+		sut.stderr.on('data', function (data) {
+			err += String(data);
+		});
+		sut.on('close', function(status) {
+			assert.ok(status !== 0, 'unexpected exit status: ' + status);
+			assert.notStrictEqual(err, '', err);
+			done();
+		});
 	});
 });
