@@ -2,29 +2,10 @@
 var assert = require('assert');
 var fs = require('fs');
 var cpy = require('./');
+var rimraf = require('rimraf');
 
-afterEach(function () {
-	[
-		'tmp/license',
-		'tmp/package.json',
-		'tmp/cwd/hello.js',
-		'tmp/hello.js',
-		'tmp/tmp/cwd/hello.js'
-	].forEach(function (path) {
-		try {
-			fs.unlinkSync(path);
-		} catch (err) {}
-	});
-	[
-		'tmp/tmp/cwd',
-		'tmp/cwd',
-		'tmp/tmp',
-		'tmp'
-	].forEach(function (path) {
-		try {
-			fs.rmdirSync(path);
-		} catch (err) {}
-	});
+beforeEach(function () {
+	rimraf.sync('tmp');
 });
 
 it('should copy files', function (cb) {
@@ -50,12 +31,12 @@ it('should respect cwd', function (cb) {
 	fs.mkdirSync('tmp/cwd');
 	fs.writeFileSync('tmp/cwd/hello.js', 'console.log("hello");');
 
-	cpy(['hello.js'], 'tmp', {cwd: 'tmp/cwd'}, function (err) {
+	cpy(['hello.js'], 'dest', {cwd: 'tmp/cwd'}, function (err) {
 		assert(!err, err);
 
 		assert.strictEqual(
-			fs.readFileSync('tmp/cwd/hello.js', 'utf8'),
-			fs.readFileSync('tmp/hello.js', 'utf8')
+			fs.readFileSync('tmp/cwd/dest/hello.js', 'utf8'),
+			fs.readFileSync('tmp/cwd/hello.js', 'utf8')
 		);
 
 		cb();
