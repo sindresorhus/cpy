@@ -89,3 +89,20 @@ it('should keep path structure', function (cb) {
 		cb();
 	});
 });
+
+it('should not keep path structure by default', function (cb) {
+	fs.mkdirSync('tmp');
+	fs.mkdirSync('tmp/cwd');
+	fs.writeFileSync('tmp/cwd/hello.js', 'console.log("hello");');
+
+	cpy(['tmp/cwd/hello.js'], 'tmp', function (err) {
+		assert(!err, err);
+
+		assert.strictEqual(
+			fs.readFileSync('tmp/cwd/hello.js', 'utf8'),
+			fs.readFileSync('tmp/hello.js', 'utf8')
+		);
+
+		cb();
+	});
+});
