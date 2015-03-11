@@ -87,3 +87,40 @@ it('should not keep path structure by default', function (cb) {
 		cb();
 	});
 });
+
+it('should handle absolute src paths', function (cb) {
+	fs.mkdirSync('tmp');
+	fs.writeFileSync('tmp/hello.js', 'console.log("hello");');
+
+	var src = fs.realpathSync('tmp/hello.js');
+	cpy([src], 'dest', {cwd: 'tmp'}, function (err) {
+		assert(!err, err);
+
+		assert.strictEqual(
+			fs.readFileSync('tmp/dest/hello.js', 'utf8'),
+			fs.readFileSync('tmp/hello.js', 'utf8')
+		);
+
+		cb();
+	});
+});
+
+it('should handle absolute dest paths', function (cb) {
+	fs.mkdirSync('tmp');
+	fs.writeFileSync('tmp/hello.js', 'console.log("hello");');
+
+	fs.mkdirSync('tmp/dest');
+	var dest = fs.realpathSync('tmp/dest'); // realpath needs existing path
+	fs.rmdirSync('tmp/dest'); // cpy should create 'dest'
+
+	cpy(['hello.js'], dest, {cwd: 'tmp'}, function (err) {
+		assert(!err, err);
+
+		assert.strictEqual(
+			fs.readFileSync('tmp/dest/hello.js', 'utf8'),
+			fs.readFileSync('tmp/hello.js', 'utf8')
+		);
+
+		cb();
+	});
+});
