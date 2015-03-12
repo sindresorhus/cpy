@@ -133,8 +133,9 @@ describe('cli', function() {
 		' missing file operands', function (done) {
 		var err = '';
 		var sut = spawn('./cli.js');
+		sut.stderr.setEncoding('utf8');
 		sut.stderr.on('data', function (data) {
-			err += String(data);
+			err += data;
 		});
 		sut.on('close', function(status) {
 			assert.ok(status !== 0, 'unexpected exit status: ' + status);

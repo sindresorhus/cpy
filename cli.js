@@ -17,14 +17,15 @@ var cli = meow({
 	string: ['_']
 });
 
+function errorHandler(err) {
+	if (err) {
+		console.error(err.message);
+		process.exit(1);
+	}
+}
+
 try {
-	cpy([cli.input[0]], cli.input[1], {overwrite: cli.flags.overwrite}, function (err) {
-		if (err) {
-			console.error(err.toLocaleString());
-			process.exit(1);
-		}
-	});
+	cpy([cli.input[0]], cli.input[1], {overwrite: cli.flags.overwrite}, errorHandler);
 } catch (err) {
-	console.error(err.toLocaleString());
-	process.exit(1);
+	errorHandler(err);
 }
