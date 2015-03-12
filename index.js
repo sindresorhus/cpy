@@ -3,11 +3,10 @@ var path = require('path');
 var eachAsync = require('each-async');
 var globby = require('globby');
 var cpFile = require('cp-file');
-var pathIsAbsolute = require('path-is-absolute');
 
 function preprocessSrcPath(srcPath, opts) {
-	if (!pathIsAbsolute(srcPath) && opts.cwd) {
-		srcPath = path.join(opts.cwd, srcPath);
+	if (opts.cwd) {
+		srcPath = path.resolve(opts.cwd, srcPath);
 	}
 	return srcPath;
 }
@@ -16,8 +15,8 @@ function preprocessDestPath(srcPath, dest, opts) {
 	var basename = path.basename(srcPath);
 	var dirname = path.dirname(srcPath);
 
-	if (!pathIsAbsolute(dest) && opts.cwd) {
-		dest = path.join(opts.cwd, dest);
+	if (opts.cwd) {
+		dest = path.resolve(opts.cwd, dest);
 	}
 
 	if (opts.parents) {
