@@ -42,6 +42,7 @@
     "meow": "^3.0.0"
   },
   "devDependencies": {
-    "mocha": "*"
+    "mocha": "*",
+    "rimraf": "^2.3.2"
   }
 }
