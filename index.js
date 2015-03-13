@@ -8,6 +8,7 @@ function preprocessSrcPath(srcPath, opts) {
 	if (opts.cwd) {
 		srcPath = path.resolve(opts.cwd, srcPath);
 	}
+
 	return srcPath;
 }
 
@@ -21,9 +22,9 @@ function preprocessDestPath(srcPath, dest, opts) {
 
 	if (opts.parents) {
 		return path.join(dest, dirname, basename);
-	} else {
-		return path.join(dest, basename);
 	}
+
+	return path.join(dest, basename);
 }
 
 module.exports = function (src, dest, opts, cb) {
@@ -37,8 +38,6 @@ module.exports = function (src, dest, opts, cb) {
 	}
 
 	cb = cb || function () {};
-
-	var cwd = opts.cwd || '';
 
 	globby(src, opts, function (err, files) {
 		if (err) {
