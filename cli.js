@@ -19,8 +19,12 @@ var cli = meow({
 
 function errorHandler(err) {
 	if (err) {
-		console.error(err.message);
-		process.exit(1);
+		if (err.noStack) {
+			console.error(err.message);
+			process.exit(1);
+		} else {
+			throw err;
+		}
 	}
 }
 

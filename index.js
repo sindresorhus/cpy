@@ -28,7 +28,9 @@ function preprocessDestPath(srcPath, dest, opts) {
 
 module.exports = function (src, dest, opts, cb) {
 	if (!(Array.isArray(src) && src.length > 0) || !dest) {
-		throw new Error('`src` and `dest` required');
+		var err = new Error('`src` and `dest` required');
+		err.noStack = true;
+		throw err;
 	}
 
 	if (typeof opts !== 'object') {
