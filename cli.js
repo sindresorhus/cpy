@@ -17,4 +17,19 @@ var cli = meow({
 	string: ['_']
 });
 
-cpy([cli.input[0]], cli.input[1], {overwrite: cli.flags.overwrite});
+function errorHandler(err) {
+	if (err) {
+		if (err.noStack) {
+			console.error(err.message);
+			process.exit(1);
+		} else {
+			throw err;
+		}
+	}
+}
+
+try {
+	cpy([cli.input[0]], cli.input[1], {overwrite: cli.flags.overwrite}, errorHandler);
+} catch (err) {
+	errorHandler(err);
+}
