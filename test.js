@@ -9,7 +9,7 @@ beforeEach(function () {
 	rimraf.sync('tmp');
 });
 
-describe('api', function() {
+describe('api', function () {
 	it('should copy files', function (cb) {
 		cpy(['license', 'package.json'], 'tmp', function (err) {
 			assert(!err, err);
@@ -128,18 +128,20 @@ describe('api', function() {
 	});
 });
 
-describe('cli', function() {
+describe('cli', function () {
 	it('should output an error message and return a non-zero exit status on ' +
 		' missing file operands', function (done) {
 		var err = '';
 		var sut = spawn('./cli.js');
+
 		sut.stderr.setEncoding('utf8');
 		sut.stderr.on('data', function (data) {
 			err += data;
 		});
-		sut.on('close', function(status) {
+
+		sut.on('close', function (status) {
 			assert.ok(status !== 0, 'unexpected exit status: ' + status);
-			assert.notStrictEqual(err, '', err);
+			assert.strictEqual(err.trim(), '`src` and `dest` required', err);
 			done();
 		});
 	});
