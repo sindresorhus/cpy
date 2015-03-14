@@ -3,6 +3,7 @@ var path = require('path');
 var eachAsync = require('each-async');
 var globby = require('globby');
 var cpFile = require('cp-file');
+var VError = require('verror');
 
 function preprocessSrcPath(srcPath, opts) {
 	if (opts.cwd) {
@@ -29,8 +30,8 @@ function preprocessDestPath(srcPath, dest, opts) {
 
 module.exports = function (src, dest, opts, cb) {
 	if (!(Array.isArray(src) && src.length > 0) || !dest) {
-		var err = new Error('`src` and `dest` required');
-		err.noStack = true;
+		var err = new VError('`src` and `dest` required');
+		err.name = 'CpyError';
 		throw err;
 	}
 
@@ -43,15 +44,23 @@ module.exports = function (src, dest, opts, cb) {
 
 	globby(src, opts, function (err, files) {
 		if (err) {
+			err = new VError(err, 'cannot glob %j', src);
+			err.name = 'CpyError';
 			cb(err);
 			return;
 		}
 
 		eachAsync(files, function (srcPath, i, next) {
-			cpFile(
-				preprocessSrcPath(srcPath, opts),
-				preprocessDestPath(srcPath, dest, opts),
-				opts, next);
+			var from = preprocessSrcPath(srcPath, opts);
+			var to = preprocessDestPath(srcPath, dest, opts);
+			cpFile(from, to, opts, function (err) {
+				if (err) {
+					err = new VError(err, 'cannot copy from \'%s\' to \'%s\'', from, to);
+					err.name = 'CpyError';
+				}
+
+				next(err);
+			});
 		}, cb);
 	});
 };
