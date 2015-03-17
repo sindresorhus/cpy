@@ -3,7 +3,18 @@ var path = require('path');
 var eachAsync = require('each-async');
 var globby = require('globby');
 var cpFile = require('cp-file');
-var VError = require('verror');
+var NestedError = require('nested-error-stacks');
+var objectAssign = require('object-assign');
+var util = require('util');
+
+function CpyError(message, nested) {
+	NestedError.call(this, message, nested);
+	objectAssign(this, nested, {message: message});
+}
+
+util.inherits(CpyError, NestedError);
+
+CpyError.prototype.name = 'CpyError';
 
 function preprocessSrcPath(srcPath, opts) {
 	if (opts.cwd) {
@@ -30,9 +41,7 @@ function preprocessDestPath(srcPath, dest, opts) {
 
 module.exports = function (src, dest, opts, cb) {
 	if (!(Array.isArray(src) && src.length > 0) || !dest) {
-		var err = new VError('`src` and `dest` required');
-		err.name = 'CpyError';
-		throw err;
+		throw new CpyError('`src` and `dest` required');
 	}
 
 	if (typeof opts !== 'object') {
@@ -44,19 +53,17 @@ module.exports = function (src, dest, opts, cb) {
 
 	globby(src, opts, function (err, files) {
 		if (err) {
-			err = new VError(err, 'cannot glob %j', src);
-			err.name = 'CpyError';
-			cb(err);
+			cb(new CpyError('cannot glob `' + src + '`: ' + err.message, err));
 			return;
 		}
 
 		eachAsync(files, function (srcPath, i, next) {
 			var from = preprocessSrcPath(srcPath, opts);
 			var to = preprocessDestPath(srcPath, dest, opts);
+
 			cpFile(from, to, opts, function (err) {
 				if (err) {
-					err = new VError(err, 'cannot copy from \'%s\' to \'%s\'', from, to);
-					err.name = 'CpyError';
+					err = new CpyError('cannot copy from `' + from + '` to `' + to + '`: ' + err.message, err);
 				}
 
 				next(err);
