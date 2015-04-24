@@ -12,6 +12,13 @@
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com"
   },
+  "maintainers": [
+    {
+      "name": "Michael Mayer",
+      "email": "michael@schnittstabil.de",
+      "url": "schnittstabil.de"
+    }
+  ],
   "engines": {
     "node": ">=0.10.0"
   },
