@@ -1,11 +1,11 @@
 'use strict';
 var path = require('path');
+var util = require('util');
 var eachAsync = require('each-async');
 var globby = require('globby');
 var cpFile = require('cp-file');
 var NestedError = require('nested-error-stacks');
 var objectAssign = require('object-assign');
-var util = require('util');
 
 function CpyError(message, nested) {
 	NestedError.call(this, message, nested);

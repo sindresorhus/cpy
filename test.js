@@ -2,8 +2,8 @@
 var assert = require('assert');
 var fs = require('fs');
 var spawn = require('child_process').spawn;
-var cpy = require('./');
 var rimraf = require('rimraf');
+var cpy = require('./');
 
 beforeEach(function () {
 	rimraf.sync('tmp');

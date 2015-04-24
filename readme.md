@@ -4,12 +4,13 @@
 
 - Fast by using streams.  
 - Resilient by using [graceful-fs](https://github.com/isaacs/node-graceful-fs).  
-- User-friendly by accepting [globs](https://github.com/sindresorhus/globby#globbing-patterns) and creating non-existant destination directories.
+- User-friendly by accepting [globs](https://github.com/sindresorhus/globby#globbing-patterns) and creating non-existant destination directories.  
+- User-friendly error messages.
 
 
 ## Install
 
-```sh
+```
 $ npm install --save cpy
 ```
 
@@ -71,26 +72,26 @@ Type: `function`
 
 ## CLI
 
-```sh
+```
 $ npm install --global cpy
 ```
 
 ```
 $ cpy --help
 
-Usage
-  $ cpy <source> <destination> [--no-overwrite]
+  Usage
+    $ cpy <source> <destination> [--no-overwrite]
 
-Example
-  $ cpy 'src/*.png' dist
+  Example
+    $ cpy 'src/*.png' dist
 
-<source> can contain globs if quoted
+  <source> can contain globs if quoted
 ```
 
 
 ## Related
 
-See [cp-file](https://github.com/sindresorhus/cp-file) if you only need to copy a single file.
+See [`cp-file`](https://github.com/sindresorhus/cp-file) if you only need to copy a single file.
 
 
 ## License

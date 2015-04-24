@@ -10,7 +10,7 @@
   "author": {
     "name": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
-    "url": "http://sindresorhus.com"
+    "url": "sindresorhus.com"
   },
   "engines": {
     "node": ">=0.10.0"
@@ -33,14 +33,21 @@
     "clone",
     "fs",
     "stream",
-    "glob"
+    "glob",
+    "file-system",
+    "ncp",
+    "fast",
+    "quick",
+    "data",
+    "content",
+    "contents"
   ],
   "dependencies": {
     "cp-file": "^2.0.0",
     "each-async": "^1.1.0",
-    "globby": "^1.0.0",
+    "globby": "^2.0.0",
     "meow": "^3.0.0",
-    "nested-error-stacks": "0.0.4",
+    "nested-error-stacks": "^1.0.0",
     "object-assign": "^2.0.0"
   },
   "devDependencies": {
