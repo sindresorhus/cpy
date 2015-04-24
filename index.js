@@ -3,6 +3,18 @@ var path = require('path');
 var eachAsync = require('each-async');
 var globby = require('globby');
 var cpFile = require('cp-file');
+var NestedError = require('nested-error-stacks');
+var objectAssign = require('object-assign');
+var util = require('util');
+
+function CpyError(message, nested) {
+	NestedError.call(this, message, nested);
+	objectAssign(this, nested, {message: message});
+}
+
+util.inherits(CpyError, NestedError);
+
+CpyError.prototype.name = 'CpyError';
 
 function preprocessSrcPath(srcPath, opts) {
 	if (opts.cwd) {
@@ -29,9 +41,7 @@ function preprocessDestPath(srcPath, dest, opts) {
 
 module.exports = function (src, dest, opts, cb) {
 	if (!(Array.isArray(src) && src.length > 0) || !dest) {
-		var err = new Error('`src` and `dest` required');
-		err.noStack = true;
-		throw err;
+		throw new CpyError('`src` and `dest` required');
 	}
 
 	if (typeof opts !== 'object') {
@@ -43,15 +53,21 @@ module.exports = function (src, dest, opts, cb) {
 
 	globby(src, opts, function (err, files) {
 		if (err) {
-			cb(err);
+			cb(new CpyError('cannot glob `' + src + '`: ' + err.message, err));
 			return;
 		}
 
 		eachAsync(files, function (srcPath, i, next) {
-			cpFile(
-				preprocessSrcPath(srcPath, opts),
-				preprocessDestPath(srcPath, dest, opts),
-				opts, next);
+			var from = preprocessSrcPath(srcPath, opts);
+			var to = preprocessDestPath(srcPath, dest, opts);
+
+			cpFile(from, to, opts, function (err) {
+				if (err) {
+					err = new CpyError('cannot copy from `' + from + '` to `' + to + '`: ' + err.message, err);
+				}
+
+				next(err);
+			});
 		}, cb);
 	});
 };

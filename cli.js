@@ -19,7 +19,7 @@ var cli = meow({
 
 function errorHandler(err) {
 	if (err) {
-		if (err.noStack) {
+		if (err.name === 'CpyError') {
 			console.error(err.message);
 			process.exit(1);
 		} else {
