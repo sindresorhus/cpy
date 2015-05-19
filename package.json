@@ -4,9 +4,6 @@
   "description": "Copy files",
   "license": "MIT",
   "repository": "sindresorhus/cpy",
-  "bin": {
-    "cpy": "cli.js"
-  },
   "author": {
     "name": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
@@ -19,6 +16,7 @@
       "url": "schnittstabil.de"
     }
   ],
+  "bin": "cli.js",
   "engines": {
     "node": ">=0.10.0"
   },
@@ -30,6 +28,7 @@
     "cli.js"
   ],
   "keywords": [
+    "cli-app",
     "cli",
     "bin",
     "copy",
