@@ -11,9 +11,11 @@ var cli = meow({
 		'Example',
 		'  $ cpy \'src/*.png\' dist',
 		'',
+		'Options',
+		'  --parents    Preseve path structure',
+		'  --cwd <dir>  Working directory for source files',
+		'',
 		'<source> can contain globs if quoted',
-		'--parents whether or not to keep path structure',
-		'--cwd <dir> the working directory to look for the source files'
 	].join('\n')
 }, {
 	string: ['_']
@@ -33,7 +35,7 @@ function errorHandler(err) {
 try {
 	cpy([cli.input[0]], cli.input[1], {
 		cwd: cli.flags.cwd || process.cwd(),
-		parents: !!cli.flags.parents,
+		parents: cli.flags.parents,
 		overwrite: cli.flags.overwrite
 	}, errorHandler);
 } catch (err) {

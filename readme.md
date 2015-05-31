@@ -2,9 +2,9 @@
 
 > Copy files
 
-- Fast by using streams.  
-- Resilient by using [graceful-fs](https://github.com/isaacs/node-graceful-fs).  
-- User-friendly by accepting [globs](https://github.com/sindresorhus/globby#globbing-patterns) and creating non-existant destination directories.  
+- Fast by using streams.
+- Resilient by using [graceful-fs](https://github.com/isaacs/node-graceful-fs).
+- User-friendly by accepting [globs](https://github.com/sindresorhus/globby#globbing-patterns) and creating non-existant destination directories.
 - User-friendly error messages.
 
 
@@ -80,10 +80,14 @@ $ npm install --global cpy
 $ cpy --help
 
   Usage
-    $ cpy <source> <destination> [--no-overwrite]
+    $ cpy <source> <destination> [--no-overwrite] [--parents] [--cwd <dir>]
 
   Example
     $ cpy 'src/*.png' dist
+
+  Options
+    --parents    Preseve path structure
+    --cwd <dir>  Working directory for source files
 
   <source> can contain globs if quoted
 ```
