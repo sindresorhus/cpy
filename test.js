@@ -145,4 +145,36 @@ describe('cli', function () {
 			done();
 		});
 	});
+
+	it('should keep path structure with flag "--parents"', function (done) {
+		fs.mkdirSync('tmp');
+		fs.mkdirSync('tmp/cwd');
+		fs.writeFileSync('tmp/cwd/hello.js', 'console.log("hello");');
+
+		var sut = spawn('./cli.js', ['tmp/cwd/hello.js', 'tmp', '--parents'])
+		sut.on('close', function (status) {
+			assert.ok(status === 0, 'unexpected exit status: ' + status);
+			assert.strictEqual(
+				fs.readFileSync('tmp/cwd/hello.js', 'utf8'),
+				fs.readFileSync('tmp/tmp/cwd/hello.js', 'utf8')
+			);
+			done();
+		});
+	});
+
+	it('should respect cwd', function (done) {
+		fs.mkdirSync('tmp');
+		fs.mkdirSync('tmp/cwd');
+		fs.writeFileSync('tmp/cwd/hello.js', 'console.log("hello");');
+
+		var sut = spawn('./cli.js', ['cwd/hello.js', 'dest', '--cwd', 'tmp'])
+		sut.on('close', function (status) {
+			assert.ok(status === 0, 'unexpected exit status: ' + status);
+			assert.strictEqual(
+				fs.readFileSync('tmp/cwd/hello.js', 'utf8'),
+				fs.readFileSync('tmp/dest/hello.js', 'utf8')
+			);
+			done();
+		});
+	});
 });

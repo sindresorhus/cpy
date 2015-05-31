@@ -6,12 +6,14 @@ var cpy = require('./');
 var cli = meow({
 	help: [
 		'Usage',
-		'  $ cpy <source> <destination> [--no-overwrite]',
+		'  $ cpy <source> <destination> [--no-overwrite] [--parents] [--cwd <dir>]',
 		'',
 		'Example',
 		'  $ cpy \'src/*.png\' dist',
 		'',
-		'<source> can contain globs if quoted'
+		'<source> can contain globs if quoted',
+		'--parents whether or not to keep path structure',
+		'--cwd <dir> the working directory to look for the source files'
 	].join('\n')
 }, {
 	string: ['_']
@@ -29,7 +31,11 @@ function errorHandler(err) {
 }
 
 try {
-	cpy([cli.input[0]], cli.input[1], {overwrite: cli.flags.overwrite}, errorHandler);
+	cpy([cli.input[0]], cli.input[1], {
+		cwd: cli.flags.cwd || process.cwd(),
+		parents: !!cli.flags.parents,
+		overwrite: cli.flags.overwrite
+	}, errorHandler);
 } catch (err) {
 	errorHandler(err);
 }
