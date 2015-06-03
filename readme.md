@@ -32,14 +32,14 @@ cpy(['src/*.png'], 'dist', function (err) {
 
 #### files
 
-*Required*
+*Required*  
 Type: `array`
 
 Files to copy.
 
 #### destination
 
-*Required*
+*Required*  
 Type: `string`
 
 Destination directory.
@@ -58,14 +58,14 @@ The filename which is used to rename every file in `files`.
 
 ##### cwd
 
-Type: `string`
+Type: `string`  
 Default: `process.cwd()`
 
 The working directory to look for the source files.
 
 ##### parents
 
-Type: `boolean`
+Type: `boolean`  
 Default: `false`
 
 Keep the path structure when copying files.
