@@ -126,6 +126,32 @@ describe('api', function () {
 			cb();
 		});
 	});
+
+	it('should rename filenames (but not filepaths)', function (cb) {
+		fs.mkdirSync('tmp');
+		fs.mkdirSync('tmp/src');
+
+		fs.writeFileSync('tmp/hello.js', 'console.log("hello");');
+		fs.writeFileSync('tmp/src/hello.js', 'console.log("src/hello");');
+
+		var opts = {cwd: 'tmp', parents: true, rename: 'hi.js'};
+
+		cpy(['hello.js', 'src/hello.js'], 'dest/subdir', opts, function (err) {
+			assert(!err, err);
+
+			assert.strictEqual(
+				fs.readFileSync('tmp/dest/subdir/hi.js', 'utf8'),
+				fs.readFileSync('tmp/hello.js', 'utf8')
+			);
+
+			assert.strictEqual(
+				fs.readFileSync('tmp/dest/subdir/src/hi.js', 'utf8'),
+				fs.readFileSync('tmp/src/hello.js', 'utf8')
+			);
+
+			cb();
+		});
+	});
 });
 
 describe('cli', function () {
@@ -173,6 +199,22 @@ describe('cli', function () {
 			assert.strictEqual(
 				fs.readFileSync('tmp/cwd/hello.js', 'utf8'),
 				fs.readFileSync('tmp/dest/hello.js', 'utf8')
+			);
+			done();
+		});
+	});
+
+	it('should rename files', function (done) {
+		fs.mkdirSync('tmp');
+		fs.mkdirSync('tmp/dest');
+		fs.writeFileSync('tmp/hello.js', 'console.log("hello");');
+
+		var sut = spawn('./cli.js', ['tmp/hello.js', '--rename', 'hi.js', 'tmp/dest'])
+		sut.on('close', function (status) {
+			assert.ok(status === 0, 'unexpected exit status: ' + status);
+			assert.strictEqual(
+				fs.readFileSync('tmp/hello.js', 'utf8'),
+				fs.readFileSync('tmp/dest/hi.js', 'utf8')
 			);
 			done();
 		});

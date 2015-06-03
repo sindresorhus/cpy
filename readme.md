@@ -50,6 +50,12 @@ Type: `object`
 
 Options are passed to [cp-file](https://github.com/sindresorhus/cp-file#options) and [glob](https://github.com/isaacs/node-glob#options).
 
+##### rename
+
+Type: `string`
+
+The filename which is used to rename every file in `files`.
+
 ##### cwd
 
 Type: `string`
@@ -80,14 +86,15 @@ $ npm install --global cpy
 $ cpy --help
 
   Usage
-    $ cpy <source> <destination> [--no-overwrite] [--parents] [--cwd <dir>]
+    $ cpy <source> [--rename <filename>] <destination> [--no-overwrite] [--parents] [--cwd <dir>]
 
   Example
     $ cpy 'src/*.png' dist
 
   Options
-    --parents    Preseve path structure
-    --cwd <dir>  Working directory for source files
+    --rename <filename>  Rename all <source> filenames to <filename>
+    --parents            Preseve path structure
+    --cwd <dir>          Working directory for source files
 
   <source> can contain globs if quoted
 ```

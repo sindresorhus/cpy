@@ -6,14 +6,15 @@ var cpy = require('./');
 var cli = meow({
 	help: [
 		'Usage',
-		'  $ cpy <source> <destination> [--no-overwrite] [--parents] [--cwd <dir>]',
+		'  $ cpy <source> [--rename <filename>] <destination> [--no-overwrite] [--parents] [--cwd <dir>]',
 		'',
 		'Example',
 		'  $ cpy \'src/*.png\' dist',
 		'',
 		'Options',
-		'  --parents    Preseve path structure',
-		'  --cwd <dir>  Working directory for source files',
+		'  --rename <filename>  Rename all <source> filenames to <filename>',
+		'  --parents            Preseve path structure',
+		'  --cwd <dir>          Working directory for source files',
 		'',
 		'<source> can contain globs if quoted',
 	].join('\n')
@@ -35,6 +36,7 @@ function errorHandler(err) {
 try {
 	cpy([cli.input[0]], cli.input[1], {
 		cwd: cli.flags.cwd || process.cwd(),
+		rename: cli.flags.rename,
 		parents: cli.flags.parents,
 		overwrite: cli.flags.overwrite
 	}, errorHandler);
