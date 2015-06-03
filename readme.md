@@ -64,6 +64,11 @@ Default: `false`
 
 Keep the path structure when copying files.
 
+##### rename
+
+Type: `string`
+
+The filename which is used to rename every file in `files`.
 
 #### callback(err)
 
@@ -80,14 +85,15 @@ $ npm install --global cpy
 $ cpy --help
 
   Usage
-    $ cpy <source> <destination> [--no-overwrite] [--parents] [--cwd <dir>]
+    $ cpy <source> <destination> [--no-overwrite] [--parents] [--cwd <dir>] [--rename=<filename>]
 
   Example
     $ cpy 'src/*.png' dist
 
   Options
-    --parents    Preseve path structure
-    --cwd <dir>  Working directory for source files
+    --parents            Preseve path structure
+    --cwd <dir>          Working directory for source files
+    --rename=<filename>  Rename all <source> filenames to <filename>
 
   <source> can contain globs if quoted
 ```

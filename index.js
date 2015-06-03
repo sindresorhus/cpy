@@ -25,7 +25,7 @@ function preprocessSrcPath(srcPath, opts) {
 }
 
 function preprocessDestPath(srcPath, dest, opts) {
-	var basename = path.basename(srcPath);
+	var basename = opts.rename || path.basename(srcPath);
 	var dirname = path.dirname(srcPath);
 
 	if (opts.cwd) {
