@@ -209,7 +209,7 @@ describe('cli', function () {
 		fs.mkdirSync('tmp/dest');
 		fs.writeFileSync('tmp/hello.js', 'console.log("hello");');
 
-		var sut = spawn('./cli.js', ['tmp/hello.js', '--rename', 'hi.js', 'tmp/dest'])
+		var sut = spawn('./cli.js', ['tmp/hello.js', 'tmp/dest', '--rename=hi.js'])
 		sut.on('close', function (status) {
 			assert.ok(status === 0, 'unexpected exit status: ' + status);
 			assert.strictEqual(
