@@ -17,8 +17,8 @@ var cli = meow({
 		'  --cwd=<dir>          Working directory for source files',
 		'  --rename=<filename>  Rename all <source> filenames to <filename>',
 		'',
-		'<source> can contain globs if quoted',
-	].join('\n')
+		'<source> can contain globs if quoted'
+	]
 }, {
 	string: ['_']
 });

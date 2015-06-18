@@ -51,7 +51,7 @@
     "cp-file": "^2.0.0",
     "each-async": "^1.1.0",
     "globby": "^2.0.0",
-    "meow": "^3.0.0",
+    "meow": "^3.3.0",
     "nested-error-stacks": "^1.0.0",
     "object-assign": "^2.0.0"
   },
