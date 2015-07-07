@@ -219,4 +219,21 @@ describe('cli', function () {
 			done();
 		});
 	});
+
+	it('should overwrite files by default', function (done) {
+		fs.mkdirSync('tmp');
+		fs.mkdirSync('tmp/dest');
+		fs.writeFileSync('tmp/hello.js', 'console.log("hello");');
+		fs.writeFileSync('tmp/dest/hello.js', 'console.log("world");');
+
+		var sut = spawn('./cli.js', ['tmp/hello.js', 'tmp/dest'])
+		sut.on('close', function (status) {
+			assert.ok(status === 0, 'unexpected exit status: ' + status);
+			assert.strictEqual(
+				fs.readFileSync('tmp/dest/hello.js', 'utf8'),
+				'console.log("hello");'
+			);
+			done();
+		});
+	});
 });

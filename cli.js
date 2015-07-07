@@ -39,7 +39,7 @@ try {
 		cwd: cli.flags.cwd || process.cwd(),
 		rename: cli.flags.rename,
 		parents: cli.flags.parents,
-		overwrite: cli.flags.overwrite
+		overwrite: cli.flags.overwrite !== false
 	}, errorHandler);
 } catch (err) {
 	errorHandler(err);
