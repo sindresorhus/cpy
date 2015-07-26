@@ -236,4 +236,25 @@ describe('cli', function () {
 			done();
 		});
 	});
+
+	it('should not copy files in the negated glob patterns', function (done) {
+		fs.mkdirSync('tmp');
+		fs.mkdirSync('tmp/src');
+		fs.mkdirSync('tmp/dest');
+		fs.writeFileSync('tmp/src/hello.js', 'console.log("hello");');
+		fs.writeFileSync('tmp/src/hello.jsx', 'console.log("world");');
+		fs.writeFileSync('tmp/src/hello.es6', 'console.log("world");');
+
+		var sut = spawn('./cli.js', ['tmp/src/*.*', '!tmp/src/*.jsx', '!tmp/src/*.es6', 'tmp/dest'])
+		sut.on('close', function (status) {
+			assert.ok(status === 0, 'unexpected exit status: ' + status);
+			assert.strictEqual(
+				fs.readFileSync('tmp/dest/hello.js', 'utf8'),
+				'console.log("hello");'
+			);
+			assert.ok(!fs.existsSync('tmp/dest/hello.jsx'));
+			assert.ok(!fs.existsSync('tmp/dest/hello.es6'));
+			done();
+		});
+	});
 });
