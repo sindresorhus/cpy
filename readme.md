@@ -20,7 +20,7 @@ $ npm install --save cpy
 ```js
 var cpy = require('cpy');
 
-cpy(['src/*.png'], 'dist', function (err) {
+cpy(['src/*.png', '!src/goat.png'], 'dist', function (err) {
 	console.log('files copied');
 });
 ```
