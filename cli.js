@@ -6,7 +6,7 @@ var cpy = require('./');
 var cli = meow({
 	help: [
 		'Usage',
-		'  $ cpy <source> <destination> [--no-overwrite] [--parents] [--cwd=<dir>] [--rename=<filename>]',
+		'  $ cpy <source>... <destination> [--no-overwrite] [--parents] [--cwd=<dir>] [--rename=<filename>]',
 		'',
 		'Example',
 		'  $ cpy \'src/*.png\' \'!src/goat.png\' dist',
