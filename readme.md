@@ -88,7 +88,7 @@ $ cpy --help
     $ cpy <source> <destination> [--no-overwrite] [--parents] [--cwd=<dir>] [--rename=<filename>]
 
   Example
-    $ cpy 'src/*.png' dist
+    $ cpy 'src/*.png' '!src/goat.png' dist
 
   Options
     --no-overwrite       Don't overwrite the destination

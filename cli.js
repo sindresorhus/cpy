@@ -9,7 +9,7 @@ var cli = meow({
 		'  $ cpy <source> <destination> [--no-overwrite] [--parents] [--cwd=<dir>] [--rename=<filename>]',
 		'',
 		'Example',
-		'  $ cpy \'src/*.png\' dist',
+		'  $ cpy \'src/*.png\' \'!src/goat.png\' dist',
 		'',
 		'Options',
 		'  --no-overwrite       Don\'t overwrite the destination',
@@ -35,7 +35,8 @@ function errorHandler(err) {
 }
 
 try {
-	cpy([cli.input[0]], cli.input[1], {
+	var dest = cli.input.pop();
+	cpy(cli.input, dest, {
 		cwd: cli.flags.cwd || process.cwd(),
 		rename: cli.flags.rename,
 		parents: cli.flags.parents,
