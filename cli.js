@@ -40,7 +40,8 @@ try {
 		cwd: cli.flags.cwd || process.cwd(),
 		rename: cli.flags.rename,
 		parents: cli.flags.parents,
-		overwrite: cli.flags.overwrite !== false
+		overwrite: cli.flags.overwrite !== false,
+		nonull: true,
 	}, errorHandler);
 } catch (err) {
 	errorHandler(err);
