@@ -156,7 +156,7 @@ describe('api', function () {
 
 describe('cli', function () {
 	it('should output an error message and return a non-zero exit status on ' +
-		' missing file operands', function (done) {
+		'missing file operands', function (done) {
 		var err = '';
 		var sut = spawn('./cli.js');
 
@@ -168,6 +168,23 @@ describe('cli', function () {
 		sut.on('close', function (status) {
 			assert.ok(status !== 0, 'unexpected exit status: ' + status);
 			assert.strictEqual(err.trim(), '`src` and `dest` required', err);
+			done();
+		});
+	});
+
+	it('should output an error message and return a non-zero exit status if ' +
+		'source file does not exist', function (done) {
+		var err = '';
+		var sut = spawn('./cli.js', ['tmp/nonexistentfile', 'tmp']);
+
+		sut.stderr.setEncoding('utf8');
+		sut.stderr.on('data', function (data) {
+			err += data;
+		});
+
+		sut.on('close', function (status) {
+			assert.ok(status !== 0, 'unexpected exit status: ' + status);
+			assert.ok(/nonexistentfile/.test(err), err);
 			done();
 		});
 	});
