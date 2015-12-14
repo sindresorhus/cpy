@@ -84,19 +84,25 @@ $ npm install --global cpy
 ```
 $ cpy --help
 
+  Copy files
+
   Usage
     $ cpy <source>... <destination> [--no-overwrite] [--parents] [--cwd=<dir>] [--rename=<filename>]
 
-  Example
-    $ cpy 'src/*.png' '!src/goat.png' dist
-
   Options
     --no-overwrite       Don't overwrite the destination
-    --parents            Preseve path structure
+    --parents            Preserve path structure
     --cwd=<dir>          Working directory for source files
     --rename=<filename>  Rename all <source> filenames to <filename>
 
   <source> can contain globs if quoted
+
+  Examples
+    $ cpy 'src/*.png' '!src/goat.png' dist
+    copy all .png files in src folder into dist except src/goat.png
+
+    $ cpy '**/*.html' '../dist/' --cwd=src --parents
+    copy all .html files inside src folder into dist and preserve path structure
 ```
 
 
