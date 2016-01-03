@@ -27,26 +27,17 @@ var cli = meow({
 	string: ['_']
 });
 
-function errorHandler(err) {
-	if (err) {
-		if (err.name === 'CpyError') {
-			console.error(err.message);
-			process.exit(1);
-		} else {
-			throw err;
-		}
+cpy(cli.input, cli.input.pop(), {
+	cwd: cli.flags.cwd || process.cwd(),
+	rename: cli.flags.rename,
+	parents: cli.flags.parents,
+	overwrite: cli.flags.overwrite !== false,
+	nonull: true
+}).catch(function (err) {
+	if (err.name === 'CpyError') {
+		console.error(err.message);
+		process.exit(1);
+	} else {
+		throw err;
 	}
-}
-
-try {
-	var dest = cli.input.pop();
-	cpy(cli.input, dest, {
-		cwd: cli.flags.cwd || process.cwd(),
-		rename: cli.flags.rename,
-		parents: cli.flags.parents,
-		overwrite: cli.flags.overwrite !== false,
-		nonull: true,
-	}, errorHandler);
-} catch (err) {
-	errorHandler(err);
-}
+});

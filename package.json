@@ -21,7 +21,7 @@
     "node": ">=0.10.0"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "xo && ava"
   },
   "files": [
     "index.js",
@@ -48,15 +48,19 @@
     "contents"
   ],
   "dependencies": {
-    "cp-file": "^2.0.0",
-    "each-async": "^1.1.0",
-    "globby": "^2.0.0",
-    "meow": "^3.3.0",
+    "cp-file": "^3.1.0",
+    "globby": "^4.0.0",
+    "meow": "^3.6.0",
     "nested-error-stacks": "^1.0.0",
-    "object-assign": "^2.0.0"
+    "object-assign": "^2.0.0",
+    "path-exists": "^2.1.0",
+    "pinkie-promise": "^2.0.0"
   },
   "devDependencies": {
-    "mocha": "*",
-    "rimraf": "^2.3.2"
+    "ava": "*",
+    "execa": "^0.1.1",
+    "file-exists": "^1.0.0",
+    "tempfile": "^1.1.1",
+    "xo": "*"
   }
 }
