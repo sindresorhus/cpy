@@ -18,9 +18,9 @@ $ npm install --save cpy
 ## Usage
 
 ```js
-var cpy = require('cpy');
+const cpy = require('cpy');
 
-cpy(['src/*.png', '!src/goat.png'], 'dist', function (err) {
+cpy(['src/*.png', '!src/goat.png'], 'dist']).then(() => {
 	console.log('files copied');
 });
 ```
@@ -28,7 +28,7 @@ cpy(['src/*.png', '!src/goat.png'], 'dist', function (err) {
 
 ## API
 
-### cpy(files, destination, [options], [callback])
+### cpy(files, destination, [options])
 
 #### files
 
@@ -69,10 +69,6 @@ Keep the path structure when copying files.
 Type: `string`
 
 The filename which is used to rename every file in `files`.
-
-#### callback(err)
-
-Type: `function`
 
 
 ## CLI
