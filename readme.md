@@ -75,7 +75,7 @@ Filename used to rename every file in `files`.
 ## Related
 
 - [cpy-cli](https://github.com/sindresorhus/cpy-cli) - CLI for this module
-- [cp-file](https://github.com/sindresorhus/cp-file) Copy a single file
+- [cp-file](https://github.com/sindresorhus/cp-file) - Copy a single file
 
 
 ## License
