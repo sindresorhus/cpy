@@ -16,7 +16,6 @@
       "url": "schnittstabil.de"
     }
   ],
-  "bin": "cli.js",
   "engines": {
     "node": ">=0.10.0"
   },
@@ -24,12 +23,9 @@
     "test": "xo && ava"
   },
   "files": [
-    "index.js",
-    "cli.js"
+    "index.js"
   ],
   "keywords": [
-    "cli-app",
-    "cli",
     "copy",
     "cp",
     "cpy",
@@ -58,7 +54,6 @@
   "devDependencies": {
     "ava": "*",
     "execa": "^0.1.1",
-    "path-exists": "^2.1.0",
     "tempfile": "^1.1.1",
     "xo": "*"
   }

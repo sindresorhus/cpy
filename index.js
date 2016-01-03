@@ -53,11 +53,11 @@ module.exports = function (src, dest, opts) {
 				var to = preprocessDestPath(srcPath, dest, opts);
 
 				return cpFile(from, to, opts).catch(function (err) {
-					throw new CpyError('cannot copy from `' + from + '` to `' + to + '`: ' + err.message, err);
+					throw new CpyError('Cannot copy from `' + from + '` to `' + to + '`: ' + err.message, err);
 				});
 			}));
 		})
 		.catch(function (err) {
-			throw new CpyError('cannot glob `' + src + '`: ' + err.message, err);
+			throw new CpyError('Cannot glob `' + src + '`: ' + err.message, err);
 		});
 };

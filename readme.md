@@ -2,6 +2,9 @@
 
 > Copy files
 
+
+## Why
+
 - Fast by using streams.
 - Resilient by using [graceful-fs](https://github.com/isaacs/node-graceful-fs).
 - User-friendly by accepting [globs](https://github.com/sindresorhus/globby#globbing-patterns) and creating non-existant destination directories.
@@ -32,14 +35,12 @@ cpy(['src/*.png', '!src/goat.png'], 'dist']).then(() => {
 
 #### files
 
-*Required*  
 Type: `array`
 
 Files to copy.
 
 #### destination
 
-*Required*  
 Type: `string`
 
 Destination directory.
@@ -55,56 +56,26 @@ Options are passed to [cp-file](https://github.com/sindresorhus/cp-file#options)
 Type: `string`  
 Default: `process.cwd()`
 
-The working directory to look for the source files.
+Working directory to find source files.
 
 ##### parents
 
 Type: `boolean`  
 Default: `false`
 
-Keep the path structure when copying files.
+Preserve path structure.
 
 ##### rename
 
 Type: `string`
 
-The filename which is used to rename every file in `files`.
-
-
-## CLI
-
-```
-$ npm install --global cpy
-```
-
-```
-$ cpy --help
-
-  Copy files
-
-  Usage
-    $ cpy <source>... <destination> [--no-overwrite] [--parents] [--cwd=<dir>] [--rename=<filename>]
-
-  Options
-    --no-overwrite       Don't overwrite the destination
-    --parents            Preserve path structure
-    --cwd=<dir>          Working directory for source files
-    --rename=<filename>  Rename all <source> filenames to <filename>
-
-  <source> can contain globs if quoted
-
-  Examples
-    $ cpy 'src/*.png' '!src/goat.png' dist
-    copy all .png files in src folder into dist except src/goat.png
-
-    $ cpy '**/*.html' '../dist/' --cwd=src --parents
-    copy all .html files inside src folder into dist and preserve path structure
-```
+Filename used to rename every file in `files`.
 
 
 ## Related
 
-See [`cp-file`](https://github.com/sindresorhus/cp-file) if you only need to copy a single file.
+- [cpy-cli](https://github.com/sindresorhus/cpy-cli) - CLI for this module
+- [cp-file](https://github.com/sindresorhus/cp-file) Copy a single file
 
 
 ## License

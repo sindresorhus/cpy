@@ -2,10 +2,10 @@ import path from 'path';
 import fs from 'fs';
 import test from 'ava';
 import tempfile from 'tempfile';
-import fn from '../';
+import fn from './';
 
-function read() {
-	return fs.readFileSync(path.join.apply(path, arguments), 'utf8');
+function read(...args) {
+	return fs.readFileSync(path.join(...args), 'utf8');
 }
 
 test.beforeEach(t => {
@@ -13,10 +13,10 @@ test.beforeEach(t => {
 });
 
 test('copy files', async t => {
-	await fn(['../license', '../package.json'], t.context.tmp);
+	await fn(['license', 'package.json'], t.context.tmp);
 
-	t.is(read('../license'), read(path.join(t.context.tmp, 'license')));
-	t.is(read('../package.json'), read(path.join(t.context.tmp, 'package.json')));
+	t.is(read('license'), read(path.join(t.context.tmp, 'license')));
+	t.is(read('package.json'), read(path.join(t.context.tmp, 'package.json')));
 });
 
 test('cwd', async t => {
@@ -64,9 +64,11 @@ test('rename filenames but not filepaths', async t => {
 	fs.writeFileSync(path.join(t.context.tmp, 'hello.js'), 'console.log("hello");');
 	fs.writeFileSync(path.join(t.context.tmp, 'src/hello.js'), 'console.log("hello");');
 
-	const opts = {cwd: t.context.tmp, parents: true, rename: 'hi.js'};
-
-	await fn(['hello.js', 'src/hello.js'], 'dest/subdir', opts);
+	await fn(['hello.js', 'src/hello.js'], 'dest/subdir', {
+		cwd: t.context.tmp,
+		parents: true,
+		rename: 'hi.js'
+	});
 
 	t.is(read(t.context.tmp, 'hello.js'), read(path.join(t.context.tmp, 'dest/subdir/hi.js')));
 	t.is(read(t.context.tmp, 'src/hello.js'), read(path.join(t.context.tmp, 'dest/subdir/src/hi.js')));
