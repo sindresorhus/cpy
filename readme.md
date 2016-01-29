@@ -23,7 +23,7 @@ $ npm install --save cpy
 ```js
 const cpy = require('cpy');
 
-cpy(['src/*.png', '!src/goat.png'], 'dist']).then(() => {
+cpy(['src/*.png', '!src/goat.png'], 'dist').then(() => {
 	console.log('files copied');
 });
 ```
