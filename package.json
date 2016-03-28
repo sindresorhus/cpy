@@ -45,12 +45,16 @@
   ],
   "dependencies": {
     "cp-file": "^3.1.0",
-    "globby": "^4.0.0",
+    "glob": "^7.0.3",
+    "globby": "^5.0.0",
+    "mkdirp": "^0.5.1",
     "nested-error-stacks": "^1.0.0",
     "object-assign": "^4.0.1",
+    "pify": "^2.3.0",
     "pinkie-promise": "^2.0.0"
   },
   "devDependencies": {
+    "arrify": "^1.0.1",
     "ava": "*",
     "tempfile": "^1.1.1",
     "xo": "*"

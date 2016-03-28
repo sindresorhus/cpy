@@ -65,6 +65,13 @@ Default: `false`
 
 Preserve path structure.
 
+##### recursive
+
+Type: `boolean`  
+Default: `true`
+
+Copy directories recursively.
+
 ##### rename
 
 Type: `string`
