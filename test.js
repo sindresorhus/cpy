@@ -12,11 +12,17 @@ test.beforeEach(t => {
 	t.context.tmp = tempfile();
 });
 
-test('copy files', async t => {
+test('copy array of files', async t => {
 	await fn(['license', 'package.json'], t.context.tmp);
 
 	t.is(read('license'), read(t.context.tmp, 'license'));
 	t.is(read('package.json'), read(t.context.tmp, 'package.json'));
+});
+
+test('copy single file', async t => {
+	await fn('license', t.context.tmp);
+
+	t.is(read('license'), read(t.context.tmp, 'license'));
 });
 
 test('cwd', async t => {
