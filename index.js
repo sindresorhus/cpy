@@ -40,8 +40,12 @@ function preprocessDestPath(srcPath, dest, opts) {
 }
 
 module.exports = function (src, dest, opts) {
-	if (!(Array.isArray(src) && src.length > 0) || !dest) {
-		return Promise.reject(new CpyError('`src` and `dest` required'));
+	if (!Array.isArray(src)) {
+		return Promise.reject(new CpyError('Expected `files` to be an array, got ' + typeof src));
+	}
+
+	if (src.length === 0 || !dest) {
+		return Promise.reject(new CpyError('`files` and `destination` required'));
 	}
 
 	opts = opts || {};
