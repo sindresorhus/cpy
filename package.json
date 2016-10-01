@@ -46,6 +46,7 @@
   "dependencies": {
     "cp-file": "^3.1.0",
     "globby": "^4.0.0",
+    "lodash": "^4.16.2",
     "nested-error-stacks": "^1.0.0",
     "object-assign": "^4.0.1",
     "pinkie-promise": "^2.0.0"

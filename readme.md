@@ -71,6 +71,12 @@ Type: `string`
 
 Filename used to rename every file in `files`.
 
+##### size
+
+Type: `number`
+
+Maximum amount of files to be copied. 
+
 
 ## Related
 
