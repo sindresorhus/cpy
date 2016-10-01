@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import test from 'ava';
 import tempfile from 'tempfile';
+import globby from 'globby';
 import fn from './';
 
 function read(...args) {
@@ -17,6 +18,22 @@ test('copy files', async t => {
 
 	t.is(read('license'), read(t.context.tmp, 'license'));
 	t.is(read('package.json'), read(t.context.tmp, 'package.json'));
+});
+
+test('size', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'support'));
+	fs.mkdirSync(path.join(t.context.tmp, 'supportSample'));
+	fs.writeFileSync(path.join(t.context.tmp, 'support/lulu.js'), 'console.log("hello");');
+	fs.writeFileSync(path.join(t.context.tmp, 'support/janna.js'), 'console.log("hello");');
+	fs.writeFileSync(path.join(t.context.tmp, 'support/nami.js'), 'console.log("hello");');
+	fs.writeFileSync(path.join(t.context.tmp, 'support/soraka.js'), 'console.log("hello");');
+
+	await fn([path.join(t.context.tmp, 'support/*.js')], path.join(t.context.tmp, 'supportSample'), {size: 3});
+
+	await globby(path.join(t.context.tmp, 'supportSample/*.js')).then(files => {
+		t.is(files.length, 3);
+	});
 });
 
 test('cwd', async t => {
