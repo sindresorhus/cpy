@@ -2,6 +2,7 @@
 var path = require('path');
 var util = require('util');
 var globby = require('globby');
+var _ = require('lodash');
 var cpFile = require('cp-file');
 var NestedError = require('nested-error-stacks');
 var objectAssign = require('object-assign');
@@ -52,6 +53,10 @@ module.exports = function (src, dest, opts) {
 
 	return globby(src, opts)
 		.then(function (files) {
+			if (opts.size) {
+				files = _.sampleSize(files, opts.size);
+			}
+
 			return Promise.all(files.map(function (srcPath) {
 				var from = preprocessSrcPath(srcPath, opts);
 				var to = preprocessDestPath(srcPath, dest, opts);
