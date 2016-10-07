@@ -35,7 +35,7 @@ cpy(['src/*.png', '!src/goat.png'], 'dist').then(() => {
 
 #### files
 
-Type: `array`
+Type: `string`, `array`
 
 Files to copy.
 

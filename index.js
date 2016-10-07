@@ -1,6 +1,7 @@
 'use strict';
 var path = require('path');
 var util = require('util');
+var arrify = require('arrify');
 var globby = require('globby');
 var cpFile = require('cp-file');
 var NestedError = require('nested-error-stacks');
@@ -40,9 +41,7 @@ function preprocessDestPath(srcPath, dest, opts) {
 }
 
 module.exports = function (src, dest, opts) {
-	if (!Array.isArray(src)) {
-		return Promise.reject(new CpyError('Expected `files` to be an array, got ' + typeof src));
-	}
+	src = arrify(src);
 
 	if (src.length === 0 || !dest) {
 		return Promise.reject(new CpyError('`files` and `destination` required'));

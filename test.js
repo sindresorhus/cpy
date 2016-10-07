@@ -12,7 +12,23 @@ test.beforeEach(t => {
 	t.context.tmp = tempfile();
 });
 
-test('copy files', async t => {
+test('reject Errors on missing `files`', async t => {
+	await t.throws(fn(), /`files`/);
+	await t.throws(fn(null, 'dest'), /`files`/);
+	await t.throws(fn([], 'dest'), /`files`/);
+});
+
+test('reject Errors on missing `destination`', async t => {
+	await t.throws(fn('TARGET'), /`destination`/);
+});
+
+test('copy single file', async t => {
+	await fn('license', t.context.tmp);
+
+	t.is(read('license'), read(t.context.tmp, 'license'));
+});
+
+test('copy array of files', async t => {
 	await fn(['license', 'package.json'], t.context.tmp);
 
 	t.is(read('license'), read(t.context.tmp, 'license'));
