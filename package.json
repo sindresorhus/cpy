@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "ava": "*",
+    "rimraf": "^2.5.4",
     "tempfile": "^1.1.1",
     "xo": "*"
   }
