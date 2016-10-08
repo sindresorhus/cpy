@@ -1,33 +1,15 @@
 'use strict';
-var path = require('path');
-var util = require('util');
-var arrify = require('arrify');
-var globby = require('globby');
-var cpFile = require('cp-file');
-var NestedError = require('nested-error-stacks');
-var objectAssign = require('object-assign');
-var Promise = require('pinkie-promise');
+const path = require('path');
+const arrify = require('arrify');
+const globby = require('globby');
+const cpFile = require('cp-file');
+const CpyError = require('./cpy-error');
 
-function CpyError(message, nested) {
-	NestedError.call(this, message, nested);
-	objectAssign(this, nested, {message: message});
-}
+const preprocessSrcPath = (srcPath, opts) => opts.cwd ? path.resolve(opts.cwd, srcPath) : srcPath;
 
-util.inherits(CpyError, NestedError);
-
-CpyError.prototype.name = 'CpyError';
-
-function preprocessSrcPath(srcPath, opts) {
-	if (opts.cwd) {
-		srcPath = path.resolve(opts.cwd, srcPath);
-	}
-
-	return srcPath;
-}
-
-function preprocessDestPath(srcPath, dest, opts) {
-	var basename = opts.rename || path.basename(srcPath);
-	var dirname = path.dirname(srcPath);
+const preprocessDestPath = (srcPath, dest, opts) => {
+	const basename = opts.rename || path.basename(srcPath);
+	const dirname = path.dirname(srcPath);
 
 	if (opts.cwd) {
 		dest = path.resolve(opts.cwd, dest);
@@ -38,29 +20,26 @@ function preprocessDestPath(srcPath, dest, opts) {
 	}
 
 	return path.join(dest, basename);
-}
+};
 
-module.exports = function (src, dest, opts) {
+module.exports = (src, dest, opts) => {
 	src = arrify(src);
+	opts = opts || {};
 
 	if (src.length === 0 || !dest) {
 		return Promise.reject(new CpyError('`files` and `destination` required'));
 	}
 
-	opts = opts || {};
-
 	return globby(src, opts)
-		.then(function (files) {
-			return Promise.all(files.map(function (srcPath) {
-				var from = preprocessSrcPath(srcPath, opts);
-				var to = preprocessDestPath(srcPath, dest, opts);
-
-				return cpFile(from, to, opts).catch(function (err) {
-					throw new CpyError('Cannot copy from `' + from + '` to `' + to + '`: ' + err.message, err);
-				});
-			}));
+		.catch(err => {
+			throw new CpyError(`Cannot glob \`${src}\`: ${err.message}`, err);
 		})
-		.catch(function (err) {
-			throw new CpyError('Cannot glob `' + src + '`: ' + err.message, err);
-		});
+		.then(files => Promise.all(files.map(srcPath => {
+			const from = preprocessSrcPath(srcPath, opts);
+			const to = preprocessDestPath(srcPath, dest, opts);
+
+			return cpFile(from, to, opts).catch(err => {
+				throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${err.message}`, err);
+			});
+		})));
 };

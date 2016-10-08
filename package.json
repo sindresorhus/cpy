@@ -17,12 +17,13 @@
     }
   ],
   "engines": {
-    "node": ">=0.10.0"
+    "node": ">=4"
   },
   "scripts": {
     "test": "xo && ava"
   },
   "files": [
+    "cpy-error.js",
     "index.js"
   ],
   "keywords": [
@@ -45,14 +46,13 @@
   ],
   "dependencies": {
     "arrify": "^1.0.1",
-    "cp-file": "^3.1.0",
-    "globby": "^4.0.0",
-    "nested-error-stacks": "^1.0.0",
-    "object-assign": "^4.0.1",
-    "pinkie-promise": "^2.0.0"
+    "cp-file": "^4.1.0",
+    "globby": "^6.0.0",
+    "nested-error-stacks": "^1.0.0"
   },
   "devDependencies": {
     "ava": "*",
+    "rimraf": "^2.5.4",
     "tempfile": "^1.1.1",
     "xo": "*"
   }

@@ -1,7 +1,9 @@
 import path from 'path';
 import fs from 'fs';
+import rimraf from 'rimraf';
 import test from 'ava';
 import tempfile from 'tempfile';
+import CpyError from './cpy-error';
 import fn from './';
 
 function read(...args) {
@@ -10,16 +12,29 @@ function read(...args) {
 
 test.beforeEach(t => {
 	t.context.tmp = tempfile();
+	t.context.EPERM = tempfile('EPERM');
+	fs.mkdirSync(t.context.EPERM, 0);
+});
+
+test.afterEach(t => {
+	rimraf.sync(t.context.tmp);
+	rimraf.sync(t.context.EPERM);
 });
 
 test('reject Errors on missing `files`', async t => {
-	await t.throws(fn(), /`files`/);
-	await t.throws(fn(null, 'dest'), /`files`/);
-	await t.throws(fn([], 'dest'), /`files`/);
+	const err1 = await t.throws(fn(), /`files`/);
+	t.true(err1 instanceof CpyError);
+
+	const err2 = await t.throws(fn(null, 'dest'), /`files`/);
+	t.true(err2 instanceof CpyError);
+
+	const err3 = await t.throws(fn([], 'dest'), /`files`/);
+	t.true(err3 instanceof CpyError);
 });
 
 test('reject Errors on missing `destination`', async t => {
-	await t.throws(fn('TARGET'), /`destination`/);
+	const err = await t.throws(fn('TARGET'), /`destination`/);
+	t.true(err instanceof CpyError);
 });
 
 test('copy single file', async t => {
@@ -88,4 +103,19 @@ test('rename filenames but not filepaths', async t => {
 
 	t.is(read(t.context.tmp, 'hello.js'), read(t.context.tmp, 'dest/subdir/hi.js'));
 	t.is(read(t.context.tmp, 'src/hello.js'), read(t.context.tmp, 'dest/subdir/src/hi.js'));
+});
+
+test('cp-file errors are not glob errors', async t => {
+	const err = await t.throws(fn('license', t.context.EPERM), /EPERM/);
+	t.notRegex(err, /glob/);
+});
+
+test('cp-file errors are CpyErrors', async t => {
+	const err = await t.throws(fn('license', t.context.EPERM), /EPERM/);
+	t.true(err instanceof CpyError);
+});
+
+test('glob errors are CpyErrors', async t => {
+	const err = await t.throws(fn(t.context.EPERM + '/**', t.context.tmp), /EPERM/);
+	t.true(err instanceof CpyError);
 });
