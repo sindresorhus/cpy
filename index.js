@@ -8,8 +8,14 @@ const CpyError = require('./cpy-error');
 const preprocessSrcPath = (srcPath, opts) => opts.cwd ? path.resolve(opts.cwd, srcPath) : srcPath;
 
 const preprocessDestPath = (srcPath, dest, opts) => {
-	const basename = opts.rename || path.basename(srcPath);
+	let basename = path.basename(srcPath);
 	const dirname = path.dirname(srcPath);
+
+	if (typeof opts.rename === 'string') {
+		basename = opts.rename;
+	} else if (typeof opts.rename === 'function') {
+		basename = opts.rename(basename);
+	}
 
 	if (opts.cwd) {
 		dest = path.resolve(opts.cwd, dest);

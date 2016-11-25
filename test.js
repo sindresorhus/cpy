@@ -105,6 +105,24 @@ test('rename filenames but not filepaths', async t => {
 	t.is(read(t.context.tmp, 'src/hello.js'), read(t.context.tmp, 'dest/subdir/src/hi.js'));
 });
 
+test('rename filenames using a function', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'src'));
+	fs.writeFileSync(path.join(t.context.tmp, 'foo.js'), 'console.log("foo");');
+	fs.writeFileSync(path.join(t.context.tmp, 'src/bar.js'), 'console.log("bar");');
+
+	await fn(['foo.js', 'src/bar.js'], 'dest/subdir', {
+		cwd: t.context.tmp,
+		parents: true,
+		rename(basename) {
+			return 'prefix-' + basename;
+		}
+	});
+
+	t.is(read(t.context.tmp, 'foo.js'), read(t.context.tmp, 'dest/subdir/prefix-foo.js'));
+	t.is(read(t.context.tmp, 'src/bar.js'), read(t.context.tmp, 'dest/subdir/src/prefix-bar.js'));
+});
+
 test('cp-file errors are not glob errors', async t => {
 	const err = await t.throws(fn('license', t.context.EPERM), /EPERM/);
 	t.notRegex(err, /glob/);

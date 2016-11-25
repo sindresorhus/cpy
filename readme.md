@@ -67,9 +67,9 @@ Preserve path structure.
 
 ##### rename
 
-Type: `string`
+Type: `string`, `function`
 
-Filename used to rename every file in `files`.
+Filename or function returning a filename used to rename every file in `files`.
 
 
 ## Related
