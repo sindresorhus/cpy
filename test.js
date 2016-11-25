@@ -114,9 +114,7 @@ test('rename filenames using a function', async t => {
 	await fn(['foo.js', 'src/bar.js'], 'dest/subdir', {
 		cwd: t.context.tmp,
 		parents: true,
-		rename(basename) {
-			return 'prefix-' + basename;
-		}
+		rename: basename => `prefix-${basename}`
 	});
 
 	t.is(read(t.context.tmp, 'foo.js'), read(t.context.tmp, 'dest/subdir/prefix-foo.js'));

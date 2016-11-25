@@ -35,7 +35,7 @@ cpy(['src/*.png', '!src/goat.png'], 'dist').then(() => {
 
 #### files
 
-Type: `string`, `array`
+Type: `string` `Array`
 
 Files to copy.
 
@@ -47,29 +47,35 @@ Destination directory.
 
 #### options
 
-Type: `object`
+Type: `Object`
 
 Options are passed to [cp-file](https://github.com/sindresorhus/cp-file#options) and [glob](https://github.com/isaacs/node-glob#options).
 
 ##### cwd
 
-Type: `string`  
+Type: `string`<br>
 Default: `process.cwd()`
 
 Working directory to find source files.
 
 ##### parents
 
-Type: `boolean`  
+Type: `boolean`<br>
 Default: `false`
 
 Preserve path structure.
 
 ##### rename
 
-Type: `string`, `function`
+Type: `string` `Function`
 
 Filename or function returning a filename used to rename every file in `files`.
+
+```js
+cpy('foo.js', 'destination', {
+	rename: basename => `prefix-${basename}`
+});
+```
 
 
 ## Related
@@ -80,4 +86,4 @@ Filename or function returning a filename used to rename every file in `files`.
 
 ## License
 
-MIT © [Sindre Sorhus](http://sindresorhus.com)
+MIT © [Sindre Sorhus](https://sindresorhus.com)
