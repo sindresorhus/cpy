@@ -48,7 +48,7 @@
     "arrify": "^1.0.1",
     "cp-file": "^4.1.0",
     "globby": "^6.0.0",
-    "nested-error-stacks": "^1.0.0"
+    "nested-error-stacks": "^2.0.0"
   },
   "devDependencies": {
     "ava": "*",
