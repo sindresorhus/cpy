@@ -123,7 +123,7 @@ test('rename filenames using a function', async t => {
 
 test('cp-file errors are not glob errors', async t => {
 	const err = await t.throws(fn('license', t.context.EPERM), /EPERM/);
-	t.notRegex(err, /glob/);
+	t.notRegex(err.message, /glob/);
 });
 
 test('cp-file errors are CpyErrors', async t => {
