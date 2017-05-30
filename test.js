@@ -135,3 +135,40 @@ test('glob errors are CpyErrors', async t => {
 	const err = await t.throws(fn(t.context.EPERM + '/**', t.context.tmp), /EPERM/);
 	t.true(err instanceof CpyError);
 });
+
+test('reports copy progress of single file', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/foo'), 'lorem ipsum');
+
+	let report;
+
+	await fn(['foo'], t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')})
+		.on('progress', event => {
+			report = event;
+		});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 1);
+	t.is(report.completedFiles, 1);
+	t.true(report.completedSize === 11);
+});
+
+test('reports copy progress of multiple files', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/foo'), 'lorem ipsum');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/bar'), 'dolor sit amet');
+
+	let report;
+
+	await fn(['foo', 'bar'], t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')})
+		.on('progress', event => {
+			report = event;
+		});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 2);
+	t.is(report.completedFiles, 2);
+	t.true(report.completedSize === 25);
+});
