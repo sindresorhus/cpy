@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import rimraf from 'rimraf';
 import test from 'ava';
 import tempfile from 'tempfile';
@@ -171,4 +172,28 @@ test('reports copy progress of multiple files', async t => {
 	t.is(report.totalFiles, 2);
 	t.is(report.completedFiles, 2);
 	t.true(report.completedSize === 25);
+});
+
+test('reports correct completedSize', async t => {
+	const ONE_MEGABYTE = (1 * 1024 * 1024) + 1;
+	const buf = crypto.pseudoRandomBytes(ONE_MEGABYTE);
+
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/fatfile'), buf);
+
+	let report;
+	let chunkCount = 0;
+
+	await fn(['fatfile'], t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')})
+		.on('progress', event => {
+			chunkCount++;
+			report = event;
+		});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 1);
+	t.is(report.completedFiles, 1);
+	t.true(report.completedSize === ONE_MEGABYTE);
+	t.true(chunkCount > 1);
 });
