@@ -38,7 +38,7 @@ module.exports = (src, dest, opts) => {
 	}
 
 	const progressEmitter = new EventEmitter();
-	const copyStatus = {};
+	const copyStatus = new Map();
 	let completedFiles = 0;
 	let completedSize = 0;
 
@@ -52,7 +52,7 @@ module.exports = (src, dest, opts) => {
 
 			return cpFile(from, to, opts)
 				.on('progress', event => {
-					const fileStatus = copyStatus[event.src] || {written: 0, percent: 0};
+					const fileStatus = copyStatus.get(event.src) || {written: 0, percent: 0};
 
 					if (fileStatus.written !== event.written || fileStatus.percent !== event.percent) {
 						completedSize -= fileStatus.written;
@@ -62,7 +62,7 @@ module.exports = (src, dest, opts) => {
 							completedFiles++;
 						}
 
-						copyStatus[event.src] = {written: event.written, percent: event.percent};
+						copyStatus.set(event.src, {written: event.written, percent: event.percent});
 
 						progressEmitter.emit('progress', {
 							totalFiles: files.length,
