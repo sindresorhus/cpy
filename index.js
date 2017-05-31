@@ -1,5 +1,5 @@
 'use strict';
-const EventEmitter = require('events').EventEmitter;
+const EventEmitter = require('events');
 const path = require('path');
 const arrify = require('arrify');
 const globby = require('globby');

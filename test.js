@@ -152,7 +152,7 @@ test('reports copy progress of single file', async t => {
 	t.not(report, undefined);
 	t.is(report.totalFiles, 1);
 	t.is(report.completedFiles, 1);
-	t.true(report.completedSize === 11);
+	t.is(report.completedSize, 11);
 });
 
 test('reports copy progress of multiple files', async t => {
@@ -171,7 +171,7 @@ test('reports copy progress of multiple files', async t => {
 	t.not(report, undefined);
 	t.is(report.totalFiles, 2);
 	t.is(report.completedFiles, 2);
-	t.true(report.completedSize === 25);
+	t.is(report.completedSize, 25);
 });
 
 test('reports correct completedSize', async t => {
@@ -194,6 +194,6 @@ test('reports correct completedSize', async t => {
 	t.not(report, undefined);
 	t.is(report.totalFiles, 1);
 	t.is(report.completedFiles, 1);
-	t.true(report.completedSize === ONE_MEGABYTE);
+	t.is(report.completedSize, ONE_MEGABYTE);
 	t.true(chunkCount > 1);
 });
