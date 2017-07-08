@@ -99,7 +99,7 @@ Signature: `function(progress)`
 Notes:
 - `.on` method is available only right after initial `cpy` call, so make sure you added a `handler` first and after that call `.then`:
 ```js
-cpy(src, dst).on('progress', (progress) => {
+cpy(src, dst).on('progress', progress => {
 	// ...
 }).then(() => {
 	// ...

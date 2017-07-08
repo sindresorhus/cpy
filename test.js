@@ -137,6 +137,24 @@ test('glob errors are CpyErrors', async t => {
 	t.true(err instanceof CpyError);
 });
 
+test('reports copy progress of no files', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+
+	let report;
+
+	await fn('*', t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')})
+		.on('progress', event => {
+			report = event;
+		});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 0);
+	t.is(report.completedFiles, 0);
+	t.is(report.completedSize, 0);
+	t.is(report.percent, 1);
+});
+
 test('reports copy progress of single file', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
@@ -153,6 +171,7 @@ test('reports copy progress of single file', async t => {
 	t.is(report.totalFiles, 1);
 	t.is(report.completedFiles, 1);
 	t.is(report.completedSize, 11);
+	t.is(report.percent, 1);
 });
 
 test('reports copy progress of multiple files', async t => {
@@ -172,6 +191,7 @@ test('reports copy progress of multiple files', async t => {
 	t.is(report.totalFiles, 2);
 	t.is(report.completedFiles, 2);
 	t.is(report.completedSize, 25);
+	t.is(report.percent, 1);
 });
 
 test('reports correct completedSize', async t => {
@@ -196,4 +216,5 @@ test('reports correct completedSize', async t => {
 	t.is(report.completedFiles, 1);
 	t.is(report.completedSize, ONE_MEGABYTE);
 	t.true(chunkCount > 1);
+	t.is(report.percent, 1);
 });
