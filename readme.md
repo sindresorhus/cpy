@@ -9,12 +9,13 @@
 - Resilient by using [graceful-fs](https://github.com/isaacs/node-graceful-fs).
 - User-friendly by accepting [globs](https://github.com/sindresorhus/globby#globbing-patterns) and creating non-existant destination directories.
 - User-friendly error messages.
+- Progress reporting.
 
 
 ## Install
 
 ```
-$ npm install --save cpy
+$ npm install cpy
 ```
 
 
@@ -77,15 +78,16 @@ cpy('foo.js', 'destination', {
 });
 ```
 
-### Progress reporting
 
-#### cpy.on('progress', handler)
+## Progress reporting
 
-##### handler(progress)
+### cpy.on('progress', handler)
+
+#### handler(progress)
 
 Type: `Function`
 
-###### progress
+##### progress
 
 ```js
 {

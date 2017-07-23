@@ -5,11 +5,9 @@ import rimraf from 'rimraf';
 import test from 'ava';
 import tempfile from 'tempfile';
 import CpyError from './cpy-error';
-import fn from './';
+import fn from '.';
 
-function read(...args) {
-	return fs.readFileSync(path.join(...args), 'utf8');
-}
+const read = (...args) => fs.readFileSync(path.join(...args), 'utf8');
 
 test.beforeEach(t => {
 	t.context.tmp = tempfile();

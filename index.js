@@ -90,7 +90,6 @@ module.exports = (src, dest, opts) => {
 
 	promise.on = function () {
 		progressEmitter.on.apply(progressEmitter, arguments);
-
 		return promise;
 	};
 
