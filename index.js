@@ -1,4 +1,5 @@
 'use strict';
+const EventEmitter = require('events');
 const path = require('path');
 const arrify = require('arrify');
 const globby = require('globby');
@@ -36,16 +37,62 @@ module.exports = (src, dest, opts) => {
 		return Promise.reject(new CpyError('`files` and `destination` required'));
 	}
 
-	return globby(src, opts)
+	const progressEmitter = new EventEmitter();
+	const copyStatus = new Map();
+	let completedFiles = 0;
+	let completedSize = 0;
+
+	const promise = globby(src, opts)
 		.catch(err => {
 			throw new CpyError(`Cannot glob \`${src}\`: ${err.message}`, err);
 		})
-		.then(files => Promise.all(files.map(srcPath => {
-			const from = preprocessSrcPath(srcPath, opts);
-			const to = preprocessDestPath(srcPath, dest, opts);
+		.then(files => {
+			if (files.length === 0) {
+				progressEmitter.emit('progress', {
+					totalFiles: 0,
+					percent: 1,
+					completedFiles: 0,
+					completedSize: 0
+				});
+			}
 
-			return cpFile(from, to, opts).catch(err => {
-				throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${err.message}`, err);
-			});
-		})));
+			return Promise.all(files.map(srcPath => {
+				const from = preprocessSrcPath(srcPath, opts);
+				const to = preprocessDestPath(srcPath, dest, opts);
+
+				return cpFile(from, to, opts)
+					.on('progress', event => {
+						const fileStatus = copyStatus.get(event.src) || {written: 0, percent: 0};
+
+						if (fileStatus.written !== event.written || fileStatus.percent !== event.percent) {
+							completedSize -= fileStatus.written;
+							completedSize += event.written;
+
+							if (event.percent === 1 && fileStatus.percent !== 1) {
+								completedFiles++;
+							}
+
+							copyStatus.set(event.src, {written: event.written, percent: event.percent});
+
+							progressEmitter.emit('progress', {
+								totalFiles: files.length,
+								percent: completedFiles / files.length,
+								completedFiles,
+								completedSize
+							});
+						}
+					})
+					.catch(err => {
+						throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${err.message}`, err);
+					});
+			}));
+		});
+
+	promise.on = function () {
+		progressEmitter.on.apply(progressEmitter, arguments);
+
+		return promise;
+	};
+
+	return promise;
 };
