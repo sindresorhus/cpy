@@ -79,32 +79,35 @@ cpy('foo.js', 'destination', {
 
 ### Progress reporting
 
-### cpy.on('progress', handler)
-#### handler
-Type: `function`
+#### cpy.on('progress', handler)
 
-Signature: `function(progress)`
+##### handler(progress)
 
-#### progress
+Type: `Function`
+
+###### progress
+
 ```js
 {
-  completedFiles: Number,
-  totalFiles: Number,
-  completedSize: Number
+	completedFiles: Number,
+	totalFiles: Number,
+	completedSize: Number
 }
 ```
+
 - `completedSize` is in bytes
 - `percent` is a value between `0` and `1`
 
-Notes:
-- `.on` method is available only right after initial `cpy` call, so make sure you added a `handler` first and after that call `.then`:
+Note that the `.on()` method is available only right after the initial `cpy` call, so make sure you add a `handler` before calling `.then()`:
+
 ```js
 cpy(src, dst).on('progress', progress => {
-	// ...
+	// …
 }).then(() => {
-	// ...
+	// …
 })
 ```
+
 
 ## Related
 
