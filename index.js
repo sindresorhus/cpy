@@ -29,9 +29,8 @@ const preprocessDestPath = (srcPath, dest, opts) => {
 	return path.join(dest, basename);
 };
 
-module.exports = (src, dest, opts) => {
+module.exports = (src, dest, opts = {}) => {
 	src = arrify(src);
-	opts = opts || {};
 
 	if (src.length === 0 || !dest) {
 		return Promise.reject(new CpyError('`files` and `destination` required'));
@@ -88,8 +87,8 @@ module.exports = (src, dest, opts) => {
 			}));
 		});
 
-	promise.on = function () {
-		progressEmitter.on.apply(progressEmitter, arguments);
+	promise.on = (...args) => {
+		progressEmitter.on(...args);
 		return promise;
 	};
 

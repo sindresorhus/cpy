@@ -24,9 +24,10 @@ $ npm install cpy
 ```js
 const cpy = require('cpy');
 
-cpy(['src/*.png', '!src/goat.png'], 'dist').then(() => {
-	console.log('files copied');
-});
+(async () => {
+	await cpy(['src/*.png', '!src/goat.png'], 'dist');
+	console.log('Files copied!');
+})();
 ```
 
 
@@ -50,7 +51,7 @@ Destination directory.
 
 Type: `Object`
 
-Options are passed to [cp-file](https://github.com/sindresorhus/cp-file#options) and [glob](https://github.com/isaacs/node-glob#options).
+Options are passed to [cp-file](https://github.com/sindresorhus/cp-file#options) and [globby](https://github.com/sindresorhus/globby#options).
 
 ##### cwd
 
@@ -103,11 +104,11 @@ Type: `Function`
 Note that the `.on()` method is available only right after the initial `cpy` call, so make sure you add a `handler` before calling `.then()`:
 
 ```js
-cpy(src, dst).on('progress', progress => {
-	// …
-}).then(() => {
-	// …
-})
+(async () => {
+	await cpy(src, dst).on('progress', progress => {
+		// …
+	});
+})();
 ```
 
 
