@@ -6,30 +6,30 @@ const globby = require('globby');
 const cpFile = require('cp-file');
 const CpyError = require('./cpy-error');
 
-const preprocessSrcPath = (srcPath, opts) => opts.cwd ? path.resolve(opts.cwd, srcPath) : srcPath;
+const preprocessSrcPath = (srcPath, options) => options.cwd ? path.resolve(options.cwd, srcPath) : srcPath;
 
-const preprocessDestPath = (srcPath, dest, opts) => {
+const preprocessDestPath = (srcPath, dest, options) => {
 	let basename = path.basename(srcPath);
 	const dirname = path.dirname(srcPath);
 
-	if (typeof opts.rename === 'string') {
-		basename = opts.rename;
-	} else if (typeof opts.rename === 'function') {
-		basename = opts.rename(basename);
+	if (typeof options.rename === 'string') {
+		basename = options.rename;
+	} else if (typeof options.rename === 'function') {
+		basename = options.rename(basename);
 	}
 
-	if (opts.cwd) {
-		dest = path.resolve(opts.cwd, dest);
+	if (options.cwd) {
+		dest = path.resolve(options.cwd, dest);
 	}
 
-	if (opts.parents) {
+	if (options.parents) {
 		return path.join(dest, dirname, basename);
 	}
 
 	return path.join(dest, basename);
 };
 
-module.exports = (src, dest, opts = {}) => {
+module.exports = (src, dest, options = {}) => {
 	src = arrify(src);
 
 	if (src.length === 0 || !dest) {
@@ -41,7 +41,7 @@ module.exports = (src, dest, opts = {}) => {
 	let completedFiles = 0;
 	let completedSize = 0;
 
-	const promise = globby(src, opts)
+	const promise = globby(src, options)
 		.catch(err => {
 			throw new CpyError(`Cannot glob \`${src}\`: ${err.message}`, err);
 		})
@@ -56,10 +56,10 @@ module.exports = (src, dest, opts = {}) => {
 			}
 
 			return Promise.all(files.map(srcPath => {
-				const from = preprocessSrcPath(srcPath, opts);
-				const to = preprocessDestPath(srcPath, dest, opts);
+				const from = preprocessSrcPath(srcPath, options);
+				const to = preprocessDestPath(srcPath, dest, options);
 
-				return cpFile(from, to, opts)
+				return cpFile(from, to, options)
 					.on('progress', event => {
 						const fileStatus = copyStatus.get(event.src) || {written: 0, percent: 0};
 
