@@ -1,59 +1,59 @@
 {
-  "name": "cpy",
-  "version": "6.0.0",
-  "description": "Copy files",
-  "license": "MIT",
-  "repository": "sindresorhus/cpy",
-  "author": {
-    "name": "Sindre Sorhus",
-    "email": "sindresorhus@gmail.com",
-    "url": "sindresorhus.com"
-  },
-  "maintainers": [
-    {
-      "name": "Michael Mayer",
-      "email": "michael@schnittstabil.de",
-      "url": "schnittstabil.de"
-    }
-  ],
-  "engines": {
-    "node": ">=6"
-  },
-  "scripts": {
-    "test": "xo && ava"
-  },
-  "files": [
-    "cpy-error.js",
-    "index.js"
-  ],
-  "keywords": [
-    "copy",
-    "cp",
-    "cpy",
-    "file",
-    "files",
-    "clone",
-    "fs",
-    "stream",
-    "glob",
-    "file-system",
-    "ncp",
-    "fast",
-    "quick",
-    "data",
-    "content",
-    "contents"
-  ],
-  "dependencies": {
-    "arrify": "^1.0.1",
-    "cp-file": "^5.0.0",
-    "globby": "^6.0.0",
-    "nested-error-stacks": "^2.0.0"
-  },
-  "devDependencies": {
-    "ava": "*",
-    "rimraf": "^2.5.4",
-    "tempfile": "^2.0.0",
-    "xo": "*"
-  }
+	"name": "cpy",
+	"version": "6.0.0",
+	"description": "Copy files",
+	"license": "MIT",
+	"repository": "sindresorhus/cpy",
+	"author": {
+		"name": "Sindre Sorhus",
+		"email": "sindresorhus@gmail.com",
+		"url": "sindresorhus.com"
+	},
+	"maintainers": [
+		{
+			"name": "Michael Mayer",
+			"email": "michael@schnittstabil.de",
+			"url": "schnittstabil.de"
+		}
+	],
+	"engines": {
+		"node": ">=6"
+	},
+	"scripts": {
+		"test": "xo && ava"
+	},
+	"files": [
+		"cpy-error.js",
+		"index.js"
+	],
+	"keywords": [
+		"copy",
+		"cp",
+		"cpy",
+		"file",
+		"files",
+		"clone",
+		"fs",
+		"stream",
+		"glob",
+		"file-system",
+		"ncp",
+		"fast",
+		"quick",
+		"data",
+		"content",
+		"contents"
+	],
+	"dependencies": {
+		"arrify": "^1.0.1",
+		"cp-file": "^6.0.0",
+		"globby": "^8.0.1",
+		"nested-error-stacks": "^2.0.0"
+	},
+	"devDependencies": {
+		"ava": "*",
+		"rimraf": "^2.5.4",
+		"tempfile": "^2.0.0",
+		"xo": "*"
+	}
 }

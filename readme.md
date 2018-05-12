@@ -105,7 +105,7 @@ Note that the `.on()` method is available only right after the initial `cpy` cal
 
 ```js
 (async () => {
-	await cpy(src, dst).on('progress', progress => {
+	await cpy(source, destination).on('progress', progress => {
 		// …
 	});
 })();
