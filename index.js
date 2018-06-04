@@ -88,6 +88,7 @@ const cpy = (src, dest, options = {}) => {
 							});
 						}
 					})
+					.then(() => to)
 					.catch(error => {
 						throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
 					});

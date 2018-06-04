@@ -56,7 +56,7 @@ declare namespace cpy {
 		on(
 			event: 'progress',
 			handler: (progress: ProgressData) => void
-		): Promise<void>;
+		): Promise<string[]>;
 	}
 }
 
@@ -82,7 +82,7 @@ declare const cpy: {
 		files: string | ReadonlyArray<string>,
 		destination: string,
 		options?: cpy.Options
-	): Promise<void> & cpy.ProgressEmitter;
+	): Promise<string[]> & cpy.ProgressEmitter;
 
 	// TODO: Remove this for the next major release, refactor the whole definition to:
 	// declare function cpy(

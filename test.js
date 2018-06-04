@@ -221,3 +221,17 @@ test('returns the event emitter on early rejection', t => {
 	t.is(typeof rejectedPromise.on, 'function');
 	rejectedPromise.catch(() => {});
 });
+
+test('returns destination path', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/foo'), 'lorem ipsum');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/bar'), 'dolor sit amet');
+
+	const to = await cpy(['foo', 'bar'], t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')});
+
+	t.deepEqual(to, [
+		path.join(t.context.tmp, 'foo'),
+		path.join(t.context.tmp, 'bar')
+	]);
+});
