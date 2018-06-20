@@ -216,3 +216,9 @@ test('reports correct completedSize', async t => {
 	t.true(chunkCount > 1);
 	t.is(report.percent, 1);
 });
+
+test('returns the event emitter on early rejection', t => {
+	const rejectedPromise = fn(null, null);
+	t.is(typeof rejectedPromise.on, 'function');
+	rejectedPromise.catch(() => {});
+});

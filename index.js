@@ -32,11 +32,17 @@ const preprocessDestPath = (srcPath, dest, options) => {
 module.exports = (src, dest, options = {}) => {
 	src = arrify(src);
 
+	const progressEmitter = new EventEmitter();
+
 	if (src.length === 0 || !dest) {
-		return Promise.reject(new CpyError('`files` and `destination` required'));
+		const promise = Promise.reject(new CpyError('`files` and `destination` required'));
+		promise.on = (...args) => {
+			progressEmitter.on(...args);
+			return promise;
+		};
+		return promise;
 	}
 
-	const progressEmitter = new EventEmitter();
 	const copyStatus = new Map();
 	let completedFiles = 0;
 	let completedSize = 0;
