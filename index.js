@@ -50,8 +50,8 @@ module.exports = (src, dest, options = {}) => {
 	let stats = {
 		totalFiles: 0,
 		percent: 1,
-		completedFiles: 0,
-		completedSize: 0
+		completedFiles,
+		completedSize
 	};
 
 	const promise = globby(src, options)
