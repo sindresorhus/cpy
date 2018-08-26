@@ -25,8 +25,8 @@ $ npm install cpy
 const cpy = require('cpy');
 
 (async () => {
-	await cpy(['src/*.png', '!src/goat.png'], 'dist');
-	console.log('Files copied!');
+	const stats = await cpy(['src/*.png', '!src/goat.png'], 'dist');
+	console.log(`Copied ${stats.completedFiles} files!`);
 })();
 ```
 
@@ -81,6 +81,8 @@ cpy('foo.js', 'destination', {
 
 
 ## Progress reporting
+Final statistics will always be returned from `cpy()` function. 
+For on-going progress, you can use the `progress` event.
 
 ### cpy.on('progress', handler)
 
