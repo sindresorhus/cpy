@@ -47,18 +47,20 @@ module.exports = (src, dest, options = {}) => {
 	let completedFiles = 0;
 	let completedSize = 0;
 
+	let stats = {
+		totalFiles: 0,
+		percent: 1,
+		completedFiles: 0,
+		completedSize: 0
+	};
+
 	const promise = globby(src, options)
 		.catch(err => {
 			throw new CpyError(`Cannot glob \`${src}\`: ${err.message}`, err);
 		})
 		.then(files => {
 			if (files.length === 0) {
-				progressEmitter.emit('progress', {
-					totalFiles: 0,
-					percent: 1,
-					completedFiles: 0,
-					completedSize: 0
-				});
+				progressEmitter.emit('progress', stats);
 			}
 
 			return Promise.all(files.map(srcPath => {
@@ -79,18 +81,19 @@ module.exports = (src, dest, options = {}) => {
 
 							copyStatus.set(event.src, {written: event.written, percent: event.percent});
 
-							progressEmitter.emit('progress', {
+							stats = {
 								totalFiles: files.length,
 								percent: completedFiles / files.length,
 								completedFiles,
 								completedSize
-							});
+							};
+							progressEmitter.emit('progress', stats);
 						}
 					})
 					.catch(err => {
 						throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${err.message}`, err);
 					});
-			}));
+			})).then(() => stats);
 		});
 
 	promise.on = (...args) => {
