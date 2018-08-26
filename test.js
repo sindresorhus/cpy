@@ -222,3 +222,10 @@ test('returns the event emitter on early rejection', t => {
 	t.is(typeof rejectedPromise.on, 'function');
 	rejectedPromise.catch(() => {});
 });
+
+test('returns final progress stats', async t => {
+	const result = await fn(['license', 'package.json'], t.context.tmp);
+	t.is(result.totalFiles, 2);
+	t.is(result.percent, 1);
+	t.is(result.completedFiles, 2);
+});
