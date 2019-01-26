@@ -194,7 +194,7 @@ test('reports copy progress of multiple files', async t => {
 
 test('reports correct completedSize', async t => {
 	const ONE_MEGABYTE = (1 * 1024 * 1024) + 1;
-	const buf = crypto.pseudoRandomBytes(ONE_MEGABYTE);
+	const buf = crypto.randomBytes(ONE_MEGABYTE);
 
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));

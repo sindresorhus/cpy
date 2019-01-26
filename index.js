@@ -40,6 +40,7 @@ module.exports = (src, dest, options = {}) => {
 			progressEmitter.on(...args);
 			return promise;
 		};
+
 		return promise;
 	}
 
@@ -47,9 +48,58 @@ module.exports = (src, dest, options = {}) => {
 	let completedFiles = 0;
 	let completedSize = 0;
 
+	if (options.disableGlob) {
+		if (src.length === 0) {
+			progressEmitter.emit('progress', {
+				totalFiles: 0,
+				percent: 1,
+				completedFiles: 0,
+				completedSize: 0
+			});
+		}
+
+		const promise = Promise.all(src.map(srcPath => {
+			const from = preprocessSrcPath(srcPath, options);
+			const to = preprocessDestPath(srcPath, dest, options);
+
+			return cpFile(from, to, options)
+				.on('progress', event => {
+					const fileStatus = copyStatus.get(event.src) || {written: 0, percent: 0};
+
+					if (fileStatus.written !== event.written || fileStatus.percent !== event.percent) {
+						completedSize -= fileStatus.written;
+						completedSize += event.written;
+
+						if (event.percent === 1 && fileStatus.percent !== 1) {
+							completedFiles++;
+						}
+
+						copyStatus.set(event.src, {written: event.written, percent: event.percent});
+
+						progressEmitter.emit('progress', {
+							totalFiles: src.length,
+							percent: completedFiles / src.length,
+							completedFiles,
+							completedSize
+						});
+					}
+				})
+				.catch(error => {
+					throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
+				});
+		}));
+
+		promise.on = (...args) => {
+			progressEmitter.on(...args);
+			return promise;
+		};
+
+		return promise;
+	}
+
 	const promise = globby(src, options)
-		.catch(err => {
-			throw new CpyError(`Cannot glob \`${src}\`: ${err.message}`, err);
+		.catch(error => {
+			throw new CpyError(`Cannot glob \`${src}\`: ${error.message}`, error);
 		})
 		.then(files => {
 			if (files.length === 0) {
@@ -87,8 +137,8 @@ module.exports = (src, dest, options = {}) => {
 							});
 						}
 					})
-					.catch(err => {
-						throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${err.message}`, err);
+					.catch(error => {
+						throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
 					});
 			}));
 		});
