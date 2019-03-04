@@ -29,7 +29,7 @@ const preprocessDestPath = (srcPath, dest, options) => {
 	return path.join(dest, basename);
 };
 
-module.exports = (src, dest, options = {}) => {
+const cpy = (src, dest, options = {}) => {
 	src = arrify(src);
 
 	const progressEmitter = new EventEmitter();
@@ -40,6 +40,7 @@ module.exports = (src, dest, options = {}) => {
 			progressEmitter.on(...args);
 			return promise;
 		};
+
 		return promise;
 	}
 
@@ -48,8 +49,8 @@ module.exports = (src, dest, options = {}) => {
 	let completedSize = 0;
 
 	const promise = globby(src, options)
-		.catch(err => {
-			throw new CpyError(`Cannot glob \`${src}\`: ${err.message}`, err);
+		.catch(error => {
+			throw new CpyError(`Cannot glob \`${src}\`: ${error.message}`, error);
 		})
 		.then(files => {
 			if (files.length === 0) {
@@ -87,8 +88,8 @@ module.exports = (src, dest, options = {}) => {
 							});
 						}
 					})
-					.catch(err => {
-						throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${err.message}`, err);
+					.catch(error => {
+						throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
 					});
 			}));
 		});
@@ -100,3 +101,6 @@ module.exports = (src, dest, options = {}) => {
 
 	return promise;
 };
+
+module.exports = cpy;
+module.exports.default = cpy;
