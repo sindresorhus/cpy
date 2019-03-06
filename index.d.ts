@@ -22,7 +22,7 @@ export interface Options extends Readonly<GlobbyOptions>, CpFileOptions {
 	 * @example
 	 *
 	 * cpy('foo.js', 'destination', {
-	 *     rename: basename => `prefix-${basename}`
+	 * 	rename: basename => `prefix-${basename}`
 	 * });
 	 */
 	readonly rename?: string | ((basename: string) => string);
