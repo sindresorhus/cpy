@@ -21,18 +21,18 @@ test.afterEach(t => {
 });
 
 test('reject Errors on missing `files`', async t => {
-	const err1 = await t.throws(fn(), /`files`/);
+	const err1 = await t.throwsAsync(fn, /`files`/);
 	t.true(err1 instanceof CpyError);
 
-	const err2 = await t.throws(fn(null, 'dest'), /`files`/);
+	const err2 = await t.throwsAsync(fn(null, 'dest'), /`files`/);
 	t.true(err2 instanceof CpyError);
 
-	const err3 = await t.throws(fn([], 'dest'), /`files`/);
+	const err3 = await t.throwsAsync(fn([], 'dest'), /`files`/);
 	t.true(err3 instanceof CpyError);
 });
 
 test('reject Errors on missing `destination`', async t => {
-	const err = await t.throws(fn('TARGET'), /`destination`/);
+	const err = await t.throwsAsync(fn('TARGET'), /`destination`/);
 	t.true(err instanceof CpyError);
 });
 
@@ -121,17 +121,17 @@ test('rename filenames using a function', async t => {
 });
 
 test('cp-file errors are not glob errors', async t => {
-	const err = await t.throws(fn('license', t.context.EPERM), /EPERM/);
+	const err = await t.throwsAsync(fn('license', t.context.EPERM), /EPERM/);
 	t.notRegex(err.message, /glob/);
 });
 
 test('cp-file errors are CpyErrors', async t => {
-	const err = await t.throws(fn('license', t.context.EPERM), /EPERM/);
+	const err = await t.throwsAsync(fn('license', t.context.EPERM), /EPERM/);
 	t.true(err instanceof CpyError);
 });
 
 test('glob errors are CpyErrors', async t => {
-	const err = await t.throws(fn(t.context.EPERM + '/**', t.context.tmp), /EPERM/);
+	const err = await t.throwsAsync(fn(t.context.EPERM + '/**', t.context.tmp), /EPERM/);
 	t.true(err instanceof CpyError);
 });
 
@@ -194,7 +194,7 @@ test('reports copy progress of multiple files', async t => {
 
 test('reports correct completedSize', async t => {
 	const ONE_MEGABYTE = (1 * 1024 * 1024) + 1;
-	const buf = crypto.pseudoRandomBytes(ONE_MEGABYTE);
+	const buf = crypto.randomBytes(ONE_MEGABYTE);
 
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));

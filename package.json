@@ -20,11 +20,12 @@
 		"node": ">=6"
 	},
 	"scripts": {
-		"test": "xo && ava"
+		"test": "xo && ava && tsd-check"
 	},
 	"files": [
 		"cpy-error.js",
-		"index.js"
+		"index.js",
+		"index.d.ts"
 	],
 	"keywords": [
 		"copy",
@@ -46,14 +47,15 @@
 	],
 	"dependencies": {
 		"arrify": "^1.0.1",
-		"cp-file": "^6.0.0",
-		"globby": "^8.0.1",
+		"cp-file": "^6.1.0",
+		"globby": "^9.1.0",
 		"nested-error-stacks": "^2.0.0"
 	},
 	"devDependencies": {
-		"ava": "*",
+		"ava": "^1.2.1",
 		"rimraf": "^2.5.4",
 		"tempfile": "^2.0.0",
-		"xo": "*"
+		"tsd-check": "^0.3.0",
+		"xo": "^0.24.0"
 	}
 }
