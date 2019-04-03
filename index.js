@@ -103,4 +103,5 @@ const cpy = (src, dest, options = {}) => {
 };
 
 module.exports = cpy;
+// TODO: Remove this for the next major release
 module.exports.default = cpy;

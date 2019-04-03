@@ -1,5 +1,6 @@
-import {expectType} from 'tsd-check';
-import cpy, {ProgressEmitter, ProgressData} from '.';
+import {expectType} from 'tsd';
+import cpy = require('.');
+import {ProgressEmitter, ProgressData} from '.';
 
 expectType<Promise<void> & ProgressEmitter>(
 	cpy(['source/*.png', '!source/goat.png'], 'destination')
