@@ -2,29 +2,29 @@ import {expectType} from 'tsd';
 import cpy = require('.');
 import {ProgressEmitter, ProgressData} from '.';
 
-expectType<Promise<void> & ProgressEmitter>(
+expectType<Promise<string[]> & ProgressEmitter>(
 	cpy(['source/*.png', '!source/goat.png'], 'destination')
 );
-expectType<Promise<void> & ProgressEmitter>(
+expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {rename: 'foobar'})
 );
-expectType<Promise<void> & ProgressEmitter>(
+expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {rename: basename => `prefix-${basename}`})
 );
-expectType<Promise<void> & ProgressEmitter>(
+expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {cwd: '/'})
 );
-expectType<Promise<void> & ProgressEmitter>(
+expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {parents: true})
 );
-expectType<Promise<void> & ProgressEmitter>(
+expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {expandDirectories: true})
 );
-expectType<Promise<void> & ProgressEmitter>(
+expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {overwrite: false})
 );
 
-expectType<Promise<void>>(
+expectType<Promise<string[]>>(
 	cpy('foo.js', 'destination').on('progress', progress => {
 		expectType<ProgressData>(progress);
 
