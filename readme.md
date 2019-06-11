@@ -25,7 +25,7 @@ $ npm install cpy
 const cpy = require('cpy');
 
 (async () => {
-	await cpy(['src/*.png', '!src/goat.png'], 'dist');
+	await cpy(['source/*.png', '!source/goat.png'], 'destination');
 	console.log('Files copied!');
 })();
 ```
@@ -33,11 +33,13 @@ const cpy = require('cpy');
 
 ## API
 
-### cpy(files, destination, [options])
+### cpy(source, destination, options?)
 
-#### files
+Returns a `Promise<string[]>` with the destination file paths.
 
-Type: `string` `Array`
+#### source
+
+Type: `string | string[]`
 
 Files to copy.
 
@@ -49,9 +51,11 @@ Destination directory.
 
 #### options
 
-Type: `Object`
+Type: `object`
 
-Options are passed to [cp-file](https://github.com/sindresorhus/cp-file#options) and [globby](https://github.com/sindresorhus/globby#options).
+Options are passed to [globby](https://github.com/sindresorhus/globby#options).
+
+In addition, you can specify the below options.
 
 ##### cwd
 
@@ -59,6 +63,13 @@ Type: `string`<br>
 Default: `process.cwd()`
 
 Working directory to find source files.
+
+##### overwrite
+
+Type: `boolean`<br>
+Default: `true`
+
+Overwrite existing files.
 
 ##### parents
 
@@ -69,9 +80,9 @@ Preserve path structure.
 
 ##### rename
 
-Type: `string` `Function`
+Type: `string | Function`
 
-Filename or function returning a filename used to rename every file in `files`.
+Filename or function returning a filename used to rename every file in `source`.
 
 ```js
 cpy('foo.js', 'destination', {
@@ -92,16 +103,16 @@ Type: `Function`
 
 ```js
 {
-	completedFiles: Number,
-	totalFiles: Number,
-	completedSize: Number
+	completedFiles: number,
+	totalFiles: number,
+	completedSize: number
 }
 ```
 
 - `completedSize` is in bytes
 - `percent` is a value between `0` and `1`
 
-Note that the `.on()` method is available only right after the initial `cpy` call, so make sure you add a `handler` before calling `.then()`:
+Note that the `.on()` method is available only right after the initial `cpy` call, so make sure you add a `handler` before awaiting the promise:
 
 ```js
 (async () => {
@@ -118,8 +129,3 @@ Note that the `.on()` method is available only right after the initial `cpy` cal
 - [cp-file](https://github.com/sindresorhus/cp-file) - Copy a single file
 - [move-file](https://github.com/sindresorhus/move-file) - Move a file
 - [make-dir](https://github.com/sindresorhus/make-dir) - Make a directory and its parents if needed
-
-
-## License
-
-MIT © [Sindre Sorhus](https://sindresorhus.com)

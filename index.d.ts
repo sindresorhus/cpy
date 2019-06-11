@@ -18,7 +18,7 @@ declare namespace cpy {
 		readonly parents?: boolean;
 
 		/**
-		Filename or function returning a filename used to rename every file in `files`.
+		Filename or function returning a filename used to rename every file in `source`.
 
 		@example
 		```
@@ -64,7 +64,7 @@ declare const cpy: {
 	/**
 	Copy files.
 
-	@param files - Files to copy.
+	@param source - Files to copy.
 	@param destination - Destination directory.
 	@param options - Options are passed to [cp-file](https://github.com/sindresorhus/cp-file#options) and [globby](https://github.com/sindresorhus/globby#options).
 
@@ -73,20 +73,20 @@ declare const cpy: {
 	import cpy = require('cpy');
 
 	(async () => {
-		await cpy(['src/*.png', '!src/goat.png'], 'dist');
+		await cpy(['source/*.png', '!source/goat.png'], 'destination');
 		console.log('Files copied!');
 	})();
 	```
 	*/
 	(
-		files: string | ReadonlyArray<string>,
+		source: string | ReadonlyArray<string>,
 		destination: string,
 		options?: cpy.Options
 	): Promise<string[]> & cpy.ProgressEmitter;
 
 	// TODO: Remove this for the next major release, refactor the whole definition to:
 	// declare function cpy(
-	// 	files: string | ReadonlyArray<string>,
+	// 	source: string | ReadonlyArray<string>,
 	// 	destination: string,
 	// 	options?: cpy.Options
 	// ): Promise<void> & cpy.ProgressEmitter;
