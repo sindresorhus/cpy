@@ -22,9 +22,13 @@ declare namespace cpy {
 
 		@example
 		```
-		cpy('foo.js', 'destination', {
-			rename: basename => `prefix-${basename}`
-		});
+		import cpy = require('cpy');
+
+		(async () => {
+			await cpy('foo.js', 'destination', {
+				rename: basename => `prefix-${basename}`
+			});
+		})();
 		```
 		*/
 		readonly rename?: string | ((basename: string) => string);
@@ -60,38 +64,27 @@ declare namespace cpy {
 	}
 }
 
-declare const cpy: {
-	/**
-	Copy files.
+/**
+Copy files.
 
-	@param source - Files to copy.
-	@param destination - Destination directory.
-	@param options - Options are passed to [cp-file](https://github.com/sindresorhus/cp-file#options) and [globby](https://github.com/sindresorhus/globby#options).
+@param source - Files to copy.
+@param destination - Destination directory.
+@param options - In addition to the options defined here, options are passed to [globby](https://github.com/sindresorhus/globby#options).
 
-	@example
-	```
-	import cpy = require('cpy');
+@example
+```
+import cpy = require('cpy');
 
-	(async () => {
-		await cpy(['source/*.png', '!source/goat.png'], 'destination');
-		console.log('Files copied!');
-	})();
-	```
-	*/
-	(
-		source: string | ReadonlyArray<string>,
-		destination: string,
-		options?: cpy.Options
-	): Promise<string[]> & cpy.ProgressEmitter;
-
-	// TODO: Remove this for the next major release, refactor the whole definition to:
-	// declare function cpy(
-	// 	source: string | ReadonlyArray<string>,
-	// 	destination: string,
-	// 	options?: cpy.Options
-	// ): Promise<void> & cpy.ProgressEmitter;
-	// export = cpy;
-	default: typeof cpy;
-};
+(async () => {
+	await cpy(['source/*.png', '!source/goat.png'], 'destination');
+	console.log('Files copied!');
+})();
+```
+*/
+declare function cpy(
+	source: string | ReadonlyArray<string>,
+	destination: string,
+	options?: cpy.Options
+): Promise<string[]> & cpy.ProgressEmitter;
 
 export = cpy;

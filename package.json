@@ -10,7 +10,7 @@
 		"url": "sindresorhus.com"
 	},
 	"engines": {
-		"node": ">=6"
+		"node": ">=8"
 	},
 	"scripts": {
 		"test": "xo && ava && tsd"
@@ -36,18 +36,21 @@
 		"quick",
 		"data",
 		"content",
-		"contents"
+		"contents",
+		"cpx",
+		"directory",
+		"directories"
 	],
 	"dependencies": {
-		"arrify": "^1.0.1",
-		"cp-file": "^6.1.0",
+		"arrify": "^2.0.1",
+		"cp-file": "^7.0.0",
 		"globby": "^9.2.0",
 		"nested-error-stacks": "^2.1.0"
 	},
 	"devDependencies": {
-		"ava": "^1.4.1",
+		"ava": "^2.1.0",
 		"rimraf": "^2.6.3",
-		"tempfile": "^2.0.0",
+		"tempfile": "^3.0.0",
 		"tsd": "^0.7.2",
 		"xo": "^0.24.0"
 	}

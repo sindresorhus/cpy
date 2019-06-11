@@ -20,14 +20,14 @@ test.afterEach(t => {
 	rimraf.sync(t.context.EPERM);
 });
 
-test('reject Errors on missing `files`', async t => {
-	const error1 = await t.throwsAsync(cpy, /`files`/);
+test('reject Errors on missing `source`', async t => {
+	const error1 = await t.throwsAsync(cpy, /`source`/);
 	t.true(error1 instanceof CpyError);
 
-	const error2 = await t.throwsAsync(cpy(null, 'dest'), /`files`/);
+	const error2 = await t.throwsAsync(cpy(null, 'destination'), /`source`/);
 	t.true(error2 instanceof CpyError);
 
-	const error3 = await t.throwsAsync(cpy([], 'dest'), /`files`/);
+	const error3 = await t.throwsAsync(cpy([], 'destination'), /`source`/);
 	t.true(error3 instanceof CpyError);
 });
 
@@ -54,9 +54,9 @@ test('cwd', async t => {
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
 	fs.writeFileSync(path.join(t.context.tmp, 'cwd/hello.js'), 'console.log("hello");');
 
-	await cpy(['hello.js'], 'dest', {cwd: path.join(t.context.tmp, 'cwd')});
+	await cpy(['hello.js'], 'destination', {cwd: path.join(t.context.tmp, 'cwd')});
 
-	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, 'cwd/dest/hello.js'));
+	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, 'cwd/destination/hello.js'));
 });
 
 test('do not overwrite', async t => {
@@ -90,34 +90,34 @@ test('path structure', async t => {
 
 test('rename filenames but not filepaths', async t => {
 	fs.mkdirSync(t.context.tmp);
-	fs.mkdirSync(path.join(t.context.tmp, 'src'));
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
 	fs.writeFileSync(path.join(t.context.tmp, 'hello.js'), 'console.log("hello");');
-	fs.writeFileSync(path.join(t.context.tmp, 'src/hello.js'), 'console.log("hello");');
+	fs.writeFileSync(path.join(t.context.tmp, 'source/hello.js'), 'console.log("hello");');
 
-	await cpy(['hello.js', 'src/hello.js'], 'dest/subdir', {
+	await cpy(['hello.js', 'source/hello.js'], 'destination/subdir', {
 		cwd: t.context.tmp,
 		parents: true,
 		rename: 'hi.js'
 	});
 
-	t.is(read(t.context.tmp, 'hello.js'), read(t.context.tmp, 'dest/subdir/hi.js'));
-	t.is(read(t.context.tmp, 'src/hello.js'), read(t.context.tmp, 'dest/subdir/src/hi.js'));
+	t.is(read(t.context.tmp, 'hello.js'), read(t.context.tmp, 'destination/subdir/hi.js'));
+	t.is(read(t.context.tmp, 'source/hello.js'), read(t.context.tmp, 'destination/subdir/source/hi.js'));
 });
 
 test('rename filenames using a function', async t => {
 	fs.mkdirSync(t.context.tmp);
-	fs.mkdirSync(path.join(t.context.tmp, 'src'));
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
 	fs.writeFileSync(path.join(t.context.tmp, 'foo.js'), 'console.log("foo");');
-	fs.writeFileSync(path.join(t.context.tmp, 'src/bar.js'), 'console.log("bar");');
+	fs.writeFileSync(path.join(t.context.tmp, 'source/bar.js'), 'console.log("bar");');
 
-	await cpy(['foo.js', 'src/bar.js'], 'dest/subdir', {
+	await cpy(['foo.js', 'source/bar.js'], 'destination/subdir', {
 		cwd: t.context.tmp,
 		parents: true,
 		rename: basename => `prefix-${basename}`
 	});
 
-	t.is(read(t.context.tmp, 'foo.js'), read(t.context.tmp, 'dest/subdir/prefix-foo.js'));
-	t.is(read(t.context.tmp, 'src/bar.js'), read(t.context.tmp, 'dest/subdir/src/prefix-bar.js'));
+	t.is(read(t.context.tmp, 'foo.js'), read(t.context.tmp, 'destination/subdir/prefix-foo.js'));
+	t.is(read(t.context.tmp, 'source/bar.js'), read(t.context.tmp, 'destination/subdir/source/prefix-bar.js'));
 });
 
 test('cp-file errors are not glob errors', async t => {

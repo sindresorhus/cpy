@@ -85,9 +85,13 @@ Type: `string | Function`
 Filename or function returning a filename used to rename every file in `source`.
 
 ```js
-cpy('foo.js', 'destination', {
-	rename: basename => `prefix-${basename}`
-});
+const cpy = require('cpy');
+
+(async () => {
+	await cpy('foo.js', 'destination', {
+		rename: basename => `prefix-${basename}`
+	});
+})();
 ```
 
 
