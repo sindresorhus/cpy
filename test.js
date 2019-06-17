@@ -12,7 +12,7 @@ const read = (...args) => fs.readFileSync(path.join(...args), 'utf8');
 test.beforeEach(t => {
 	t.context.tmp = tempfile();
 	if (process.platform === 'win32') {
-		t.context.EPERM = 'C:\\Windows\\System32'
+		t.context.EPERM = 'C:\\Windows\\System32';
 	} else {
 		t.context.EPERM = tempfile('EPERM');
 		fs.mkdirSync(t.context.EPERM, 0);
@@ -85,7 +85,6 @@ test('do not keep path structure', async t => {
 });
 
 test('path structure', async t => {
-	debugger
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
 	fs.writeFileSync(path.join(t.context.tmp, 'cwd', 'hello.js'), 'console.log("hello");');
