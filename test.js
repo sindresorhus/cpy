@@ -11,13 +11,19 @@ const read = (...args) => fs.readFileSync(path.join(...args), 'utf8');
 
 test.beforeEach(t => {
 	t.context.tmp = tempfile();
-	t.context.EPERM = tempfile('EPERM');
-	fs.mkdirSync(t.context.EPERM, 0);
+	if (process.platform === 'win32') {
+		t.context.EPERM = 'C:\\Windows\\System32'
+	} else {
+		t.context.EPERM = tempfile('EPERM');
+		fs.mkdirSync(t.context.EPERM, 0);
+	}
 });
 
 test.afterEach(t => {
 	rimraf.sync(t.context.tmp);
-	rimraf.sync(t.context.EPERM);
+	if (process.platform !== 'win32') {
+		rimraf.sync(t.context.EPERM);
+	}
 });
 
 test('reject Errors on missing `source`', async t => {
@@ -56,7 +62,7 @@ test('cwd', async t => {
 
 	await cpy(['hello.js'], 'destination', {cwd: path.join(t.context.tmp, 'cwd')});
 
-	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, 'cwd/destination/hello.js'));
+	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, 'cwd', 'destination', 'hello.js'));
 });
 
 test('do not overwrite', async t => {
@@ -71,28 +77,29 @@ test('do not overwrite', async t => {
 test('do not keep path structure', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
-	fs.writeFileSync(path.join(t.context.tmp, 'cwd/hello.js'), 'console.log("hello");');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd', 'hello.js'), 'console.log("hello");');
 
-	await cpy([path.join(t.context.tmp, 'cwd/hello.js')], t.context.tmp);
+	await cpy([path.join(t.context.tmp, 'cwd', 'hello.js')], t.context.tmp);
 
-	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, 'hello.js'));
+	t.is(read(t.context.tmp, 'cwd', 'hello.js'), read(t.context.tmp, 'hello.js'));
 });
 
 test('path structure', async t => {
+	debugger
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
-	fs.writeFileSync(path.join(t.context.tmp, 'cwd/hello.js'), 'console.log("hello");');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd', 'hello.js'), 'console.log("hello");');
 
-	await cpy([path.join(t.context.tmp, 'cwd/hello.js')], t.context.tmp, {parents: true});
+	await cpy([path.join(t.context.tmp, 'cwd', 'hello.js')], t.context.tmp, {parents: true});
 
-	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, t.context.tmp, 'cwd/hello.js'));
+	t.is(read(t.context.tmp, 'cwd', 'hello.js'), read(t.context.tmp, t.context.tmp, 'cwd', 'hello.js'));
 });
 
 test('rename filenames but not filepaths', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'source'));
 	fs.writeFileSync(path.join(t.context.tmp, 'hello.js'), 'console.log("hello");');
-	fs.writeFileSync(path.join(t.context.tmp, 'source/hello.js'), 'console.log("hello");');
+	fs.writeFileSync(path.join(t.context.tmp, 'source', 'hello.js'), 'console.log("hello");');
 
 	await cpy(['hello.js', 'source/hello.js'], 'destination/subdir', {
 		cwd: t.context.tmp,
@@ -100,15 +107,15 @@ test('rename filenames but not filepaths', async t => {
 		rename: 'hi.js'
 	});
 
-	t.is(read(t.context.tmp, 'hello.js'), read(t.context.tmp, 'destination/subdir/hi.js'));
-	t.is(read(t.context.tmp, 'source/hello.js'), read(t.context.tmp, 'destination/subdir/source/hi.js'));
+	t.is(read(t.context.tmp, 'hello.js'), read(t.context.tmp, 'destination', 'subdir', 'hi.js'));
+	t.is(read(t.context.tmp, 'source', 'hello.js'), read(t.context.tmp, 'destination', 'subdir', 'source', 'hi.js'));
 });
 
 test('rename filenames using a function', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'source'));
 	fs.writeFileSync(path.join(t.context.tmp, 'foo.js'), 'console.log("foo");');
-	fs.writeFileSync(path.join(t.context.tmp, 'source/bar.js'), 'console.log("bar");');
+	fs.writeFileSync(path.join(t.context.tmp, 'source', 'bar.js'), 'console.log("bar");');
 
 	await cpy(['foo.js', 'source/bar.js'], 'destination/subdir', {
 		cwd: t.context.tmp,
@@ -116,8 +123,8 @@ test('rename filenames using a function', async t => {
 		rename: basename => `prefix-${basename}`
 	});
 
-	t.is(read(t.context.tmp, 'foo.js'), read(t.context.tmp, 'destination/subdir/prefix-foo.js'));
-	t.is(read(t.context.tmp, 'source/bar.js'), read(t.context.tmp, 'destination/subdir/source/prefix-bar.js'));
+	t.is(read(t.context.tmp, 'foo.js'), read(t.context.tmp, 'destination', 'subdir', 'prefix-foo.js'));
+	t.is(read(t.context.tmp, 'source', 'bar.js'), read(t.context.tmp, 'destination', 'subdir', 'source', 'prefix-bar.js'));
 });
 
 test('cp-file errors are not glob errors', async t => {
