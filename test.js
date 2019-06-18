@@ -54,6 +54,20 @@ test('throws on invalid concurrency value', async t => {
 	await t.throwsAsync(cpy(['license', 'package.json'], t.context.tmp, {concurrency: 'foo'}));
 });
 
+test('copy array of files with filter', async t => {
+	await cpy(['license', 'package.json'], t.context.tmp, {filter: name => name !== 'license'});
+
+	t.false(fs.existsSync(path.join(t.context.tmp, 'license')));
+	t.is(read('package.json'), read(t.context.tmp, 'package.json'));
+});
+
+test('copy array of files with async filter', async t => {
+	await cpy(['license', 'package.json'], t.context.tmp, {filter: async name => name !== 'license'});
+
+	t.false(fs.existsSync(path.join(t.context.tmp, 'license')));
+	t.is(read('package.json'), read(t.context.tmp, 'package.json'));
+});
+
 test('cwd', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));

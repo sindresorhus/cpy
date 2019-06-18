@@ -46,6 +46,22 @@ declare namespace cpy {
 		@default true
 		*/
 		readonly ignoreJunk?: boolean;
+
+		/**
+		Function to filter copied files. Return true to include, false to exclude. Can also return a Promise that resolves to true or false.
+
+		@example
+		```
+		import cpy = require('cpy');
+
+		(async () => {
+			await cpy('foo', 'destination', {
+				filter: name => !name.includes('NOCOPY')
+			});
+		})();
+		```
+		*/
+		readonly filter?: (basename: string) => (boolean | Promise<boolean>);
 	}
 
 	interface ProgressData {

@@ -8,6 +8,7 @@ const globby = require('globby');
 const hasGlob = require('has-glob');
 const cpFile = require('cp-file');
 const junk = require('junk');
+const pFilter = require('p-filter');
 const CpyError = require('./cpy-error');
 
 const defaultOptions = {
@@ -72,6 +73,20 @@ module.exports = (source, destination, {
 
 		if (files.length === 0 && !hasGlob(source)) {
 			throw new CpyError(`Cannot copy \`${source}\`: the file doesn't exist`);
+		}
+
+		if (options.filter !== undefined) {
+			const filteredFiles = await pFilter(files, options.filter, {concurrency: 1024});
+			files = filteredFiles;
+		}
+
+		if (files.length === 0) {
+			progressEmitter.emit('progress', {
+				totalFiles: 0,
+				percent: 1,
+				completedFiles: 0,
+				completedSize: 0
+			});
 		}
 
 		const fileProgressHandler = event => {
