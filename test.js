@@ -135,21 +135,11 @@ test('glob errors are CpyErrors', async t => {
 	t.true(error instanceof CpyError);
 });
 
-test('reports copy progress of no files', async t => {
+test('throws on non-existing file', async t => {
 	fs.mkdirSync(t.context.tmp);
-	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
 
-	let report;
-	await cpy('*', t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')})
-		.on('progress', event => {
-			report = event;
-		});
-
-	t.not(report, undefined);
-	t.is(report.totalFiles, 0);
-	t.is(report.completedFiles, 0);
-	t.is(report.completedSize, 0);
-	t.is(report.percent, 1);
+	const error = await t.throwsAsync(cpy(['no-file'], t.context.tmp));
+	t.true(error instanceof CpyError);
 });
 
 test('reports copy progress of single file', async t => {

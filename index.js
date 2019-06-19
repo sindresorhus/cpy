@@ -51,12 +51,7 @@ module.exports = (source, destination, options = {}) => {
 		}
 
 		if (files.length === 0) {
-			progressEmitter.emit('progress', {
-				totalFiles: 0,
-				percent: 1,
-				completedFiles: 0,
-				completedSize: 0
-			});
+			throw new CpyError(`Cannot copy \`${source}\`: no files found`);
 		}
 
 		const fileProgressHandler = event => {
