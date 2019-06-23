@@ -121,6 +121,8 @@ const cpy = require('cpy');
 	});
 })();
 ```
+
+
 ## Progress reporting
 
 ### cpy.on('progress', handler)
