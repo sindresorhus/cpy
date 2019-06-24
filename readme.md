@@ -36,6 +36,7 @@ const cpy = require('cpy');
 ### cpy(source, destination, options?)
 
 Returns a `Promise<string[]>` with the destination file paths.
+If the file does not exist, an error will be thrown.
 
 #### source
 

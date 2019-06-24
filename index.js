@@ -51,7 +51,7 @@ module.exports = (source, destination, options = {}) => {
 		}
 
 		if (files.length === 0) {
-			throw new CpyError(`Cannot copy \`${source}\`: no files found`);
+			throw new CpyError(`Cannot copy \`${source}\`: the file doesn't exist`);
 		}
 
 		const fileProgressHandler = event => {
