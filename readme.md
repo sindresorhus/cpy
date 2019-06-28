@@ -108,7 +108,7 @@ Ignores [junk](https://github.com/sindresorhus/junk) files.
 
 #### filter
 
-Type: `string | Function`
+Type: `Function`
 
 Function to filter copied files. Return true to include, false to exclude. Can also return a Promise that resolves to true or false.
 
