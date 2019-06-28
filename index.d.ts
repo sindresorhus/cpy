@@ -2,6 +2,33 @@ import {GlobbyOptions} from 'globby';
 import {Options as CpFileOptions} from 'cp-file';
 
 declare namespace cpy {
+	interface SourceFile {
+		/**
+		Path to file.
+		*/
+		readonly path: string,
+
+		/**
+		Resolved path to file.
+		*/
+		readonly resolvedPath: string,
+
+		/**
+		File name.
+		*/
+		readonly name: string,
+
+		/**
+		File name without extension.
+		*/
+		readonly nameWithoutExtension: string,
+
+		/**
+		File extension.
+		*/
+		readonly extension: string,
+	}
+
 	interface Options extends Readonly<GlobbyOptions>, CpFileOptions {
 		/**
 		Working directory to find source files.
@@ -48,7 +75,8 @@ declare namespace cpy {
 		readonly ignoreJunk?: boolean;
 
 		/**
-		Function to filter copied files. Return true to include, false to exclude. Can also return a Promise that resolves to true or false.
+		Function to filter files to copy. Should accept source file object as argument.
+		Return true to include, false to exclude. Can also return a Promise that resolves to true or false.
 
 		@example
 		```
@@ -56,12 +84,12 @@ declare namespace cpy {
 
 		(async () => {
 			await cpy('foo', 'destination', {
-				filter: name => !name.includes('NOCOPY')
+				filter: file => file.extension !== '.nocopy'
 			});
 		})();
 		```
 		*/
-		readonly filter?: (basename: string) => (boolean | Promise<boolean>);
+		readonly filter?: (file: SourceFile) => (boolean | Promise<boolean>);
 	}
 
 	interface ProgressData {

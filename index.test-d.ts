@@ -28,10 +28,10 @@ expectType<Promise<string[]> & ProgressEmitter>(
 );
 
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {filter: () => true})
+	cpy('foo.js', 'destination', {filter: (file: cpy.SourceFile) => true})
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {filter: async () => true})
+	cpy('foo.js', 'destination', {filter: async (file: cpy.SourceFile) => true})
 );
 
 expectType<Promise<string[]>>(

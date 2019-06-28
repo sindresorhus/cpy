@@ -106,22 +106,54 @@ Default: `true`
 
 Ignores [junk](https://github.com/sindresorhus/junk) files.
 
-#### filter
+##### filter
 
 Type: `Function`
 
-Function to filter copied files. Return true to include, false to exclude. Can also return a Promise that resolves to true or false.
+Function to filter files to copy. Should accept source file object as argument.
+Return true to include, false to exclude. Can also return a Promise that resolves to true or false.
 
 ```js
 const cpy = require('cpy');
 
 (async () => {
-	await cpy('foo.js', 'destination', {
-		filter: name => !name.includes('NOCOPY')
+	await cpy('foo', 'destination', {
+		filter: file => file.extension !== '.nocopy'
 	});
 })();
 ```
 
+##### Source file object
+
+###### path
+
+Type: `string`
+
+Path to file.
+
+###### resolvedPath
+
+Type: `string`
+
+Resolved path to file.
+
+###### name
+
+Type: `string`
+
+File name.
+
+###### nameWithoutExtension
+
+Type: `string`
+
+File name without extension.
+
+###### extension
+
+Type: `string`
+
+File extension.
 
 ## Progress reporting
 

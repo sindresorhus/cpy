@@ -55,14 +55,32 @@ test('throws on invalid concurrency value', async t => {
 });
 
 test('copy array of files with filter', async t => {
-	await cpy(['license', 'package.json'], t.context.tmp, {filter: name => name !== 'license'});
+	await cpy(['license', 'package.json'], t.context.tmp, {
+		filter: file => {
+			t.is(typeof file.path, 'string');
+			t.is(typeof file.resolvedPath, 'string');
+			t.is(typeof file.name, 'string');
+			t.is(typeof file.nameWithoutExtension, 'string');
+			t.is(typeof file.extension, 'string');
+			return file.path !== 'license';
+		}
+	});
 
 	t.false(fs.existsSync(path.join(t.context.tmp, 'license')));
 	t.is(read('package.json'), read(t.context.tmp, 'package.json'));
 });
 
 test('copy array of files with async filter', async t => {
-	await cpy(['license', 'package.json'], t.context.tmp, {filter: async name => name !== 'license'});
+	await cpy(['license', 'package.json'], t.context.tmp, {
+		filter: async file => {
+			t.is(typeof file.path, 'string');
+			t.is(typeof file.resolvedPath, 'string');
+			t.is(typeof file.name, 'string');
+			t.is(typeof file.nameWithoutExtension, 'string');
+			t.is(typeof file.extension, 'string');
+			return file.path !== 'license';
+		}
+	});
 
 	t.false(fs.existsSync(path.join(t.context.tmp, 'license')));
 	t.is(read('package.json'), read(t.context.tmp, 'package.json'));
