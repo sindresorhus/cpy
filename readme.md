@@ -155,6 +155,7 @@ Type: `string`
 
 File extension.
 
+
 ## Progress reporting
 
 ### cpy.on('progress', handler)
