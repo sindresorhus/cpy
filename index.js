@@ -19,6 +19,7 @@ class SourceFile {
 	constructor(path, resolvedPath) {
 		this.path = path;
 		this.resolvedPath = resolvedPath;
+		Object.freeze(this);
 	}
 
 	get name() {
