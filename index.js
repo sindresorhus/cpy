@@ -41,8 +41,6 @@ module.exports = (source, destination, options = {}) => {
 		concurrencyDegree = (os.cpus().length || 1) * 2;
 	}
 
-	console.log(`Concurrency degree is: ${concurrencyDegree}.`);
-
 	const promise = (async () => {
 		source = arrify(source);
 
@@ -71,7 +69,7 @@ module.exports = (source, destination, options = {}) => {
 		}
 
 		const fileProgressHandler = event => {
-			const fileStatus = copyStatus.get(event.src) || { written: 0, percent: 0 };
+			const fileStatus = copyStatus.get(event.src) || {written: 0, percent: 0};
 
 			if (fileStatus.written !== event.written || fileStatus.percent !== event.percent) {
 				completedSize -= fileStatus.written;
@@ -95,8 +93,8 @@ module.exports = (source, destination, options = {}) => {
 			}
 		};
 
-		return pAll(files.map(async sourcePath => {
-			const operation = async () => {
+		return pAll(files.map(sourcePath => {
+			return async () => {
 				const from = preprocessSourcePath(sourcePath, options);
 				const to = preprocessDestinationPath(sourcePath, destination, options);
 
@@ -105,10 +103,8 @@ module.exports = (source, destination, options = {}) => {
 				} catch (error) {
 					throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
 				}
-			}
-
-			return operation;
-		}), { concurrency: concurrencyDegree });
+			};
+		}), {concurrency: concurrencyDegree});
 	})();
 
 	promise.on = (...arguments_) => {

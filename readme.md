@@ -84,12 +84,6 @@ Type: `string | Function`
 
 Filename or function returning a filename used to rename every file in `source`.
 
-##### concurrency
-
-Type: `number`
-
-Number of files being copied concurrently.
-
 ```js
 const cpy = require('cpy');
 
@@ -99,6 +93,12 @@ const cpy = require('cpy');
 	});
 })();
 ```
+
+##### concurrency
+
+Type: `number`
+Default: `(os.cpus().length || 1) * 2`;
+Number of files being copied concurrently.
 
 
 ## Progress reporting
