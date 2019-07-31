@@ -1,6 +1,8 @@
 'use strict';
 const EventEmitter = require('events');
 const path = require('path');
+const os = require('os');
+const pAll = require('p-all');
 const arrify = require('arrify');
 const globby = require('globby');
 const cpFile = require('cp-file');
@@ -31,6 +33,15 @@ const preprocessDestinationPath = (source, destination, options) => {
 
 module.exports = (source, destination, options = {}) => {
 	const progressEmitter = new EventEmitter();
+	let concurrencyDegree;
+
+	if (options.concurrency) {
+		concurrencyDegree = options.concurrency;
+	} else {
+		concurrencyDegree = (os.cpus().length || 1) * 2;
+	}
+
+	console.log(`Concurrency degree is: ${concurrencyDegree}.`);
 
 	const promise = (async () => {
 		source = arrify(source);
@@ -60,7 +71,7 @@ module.exports = (source, destination, options = {}) => {
 		}
 
 		const fileProgressHandler = event => {
-			const fileStatus = copyStatus.get(event.src) || {written: 0, percent: 0};
+			const fileStatus = copyStatus.get(event.src) || { written: 0, percent: 0 };
 
 			if (fileStatus.written !== event.written || fileStatus.percent !== event.percent) {
 				completedSize -= fileStatus.written;
@@ -84,18 +95,20 @@ module.exports = (source, destination, options = {}) => {
 			}
 		};
 
-		return Promise.all(files.map(async sourcePath => {
-			const from = preprocessSourcePath(sourcePath, options);
-			const to = preprocessDestinationPath(sourcePath, destination, options);
+		return pAll(files.map(async sourcePath => {
+			const operation = async () => {
+				const from = preprocessSourcePath(sourcePath, options);
+				const to = preprocessDestinationPath(sourcePath, destination, options);
 
-			try {
-				await cpFile(from, to, options).on('progress', fileProgressHandler);
-			} catch (error) {
-				throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
+				try {
+					await cpFile(from, to, options).on('progress', fileProgressHandler);
+				} catch (error) {
+					throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
+				}
 			}
 
-			return to;
-		}));
+			return operation;
+		}), { concurrency: concurrencyDegree });
 	})();
 
 	promise.on = (...arguments_) => {
