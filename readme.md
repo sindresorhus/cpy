@@ -96,8 +96,9 @@ const cpy = require('cpy');
 
 ##### concurrency
 
-Type: `number`
-Default: `(os.cpus().length || 1) * 2`;
+Type: `number`<br>
+Default: `(os.cpus().length || 1) * 2`
+
 Number of files being copied concurrently.
 
 
