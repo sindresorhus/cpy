@@ -33,13 +33,7 @@ const preprocessDestinationPath = (source, destination, options) => {
 
 module.exports = (source, destination, options = {}) => {
 	const progressEmitter = new EventEmitter();
-	let concurrencyDegree;
-
-	if (options.concurrency) {
-		concurrencyDegree = options.concurrency;
-	} else {
-		concurrencyDegree = (os.cpus().length || 1) * 2;
-	}
+	const concurrency = options.concurrency || (os.cpus().length || 1) * 2;
 
 	const promise = (async () => {
 		source = arrify(source);
@@ -106,7 +100,7 @@ module.exports = (source, destination, options = {}) => {
 
 				return to;
 			};
-		}), {concurrency: concurrencyDegree});
+		}), {concurrency});
 	})();
 
 	promise.on = (...arguments_) => {
