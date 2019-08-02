@@ -31,9 +31,11 @@ const preprocessDestinationPath = (source, destination, options) => {
 	return path.join(destination, basename);
 };
 
-module.exports = (source, destination, options = {}) => {
+module.exports = (source, destination, {
+	concurrency = (os.cpus().lengh || 1) * 2,
+	...options
+} = {}) => {
 	const progressEmitter = new EventEmitter();
-	const concurrency = options.concurrency || (os.cpus().length || 1) * 2;
 
 	const promise = (async () => {
 		source = arrify(source);

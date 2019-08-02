@@ -36,7 +36,7 @@ declare namespace cpy {
 		/**
 		Number of files being copied concurrently.
 
-		@default "(os.cpus().length || 1) * 2"
+		@default (os.cpus().length || 1) * 2
 		*/
 		readonly concurrency?: number;
 	}
