@@ -49,6 +49,11 @@ test('copy array of files', async t => {
 	t.is(read('package.json'), read(t.context.tmp, 'package.json'));
 });
 
+test('throws on invalid concurrency value', async t => {
+	await t.throwsAsync(cpy(['license', 'package.json'], t.context.tmp, {concurrency: -2}));
+	await t.throwsAsync(cpy(['license', 'package.json'], t.context.tmp, {concurrency: 'foo'}));
+});
+
 test('cwd', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));

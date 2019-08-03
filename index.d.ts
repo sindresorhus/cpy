@@ -32,6 +32,13 @@ declare namespace cpy {
 		```
 		*/
 		readonly rename?: string | ((basename: string) => string);
+
+		/**
+		Number of files being copied concurrently.
+
+		@default (os.cpus().length || 1) * 2
+		*/
+		readonly concurrency?: number;
 	}
 
 	interface ProgressData {

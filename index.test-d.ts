@@ -23,6 +23,10 @@ expectType<Promise<string[]> & ProgressEmitter>(
 expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {overwrite: false})
 );
+expectType<Promise<string[]> & ProgressEmitter>(
+	cpy('foo.js', 'destination', {concurrency: 2})
+);
+
 
 expectType<Promise<string[]>>(
 	cpy('foo.js', 'destination').on('progress', progress => {

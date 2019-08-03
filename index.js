@@ -1,6 +1,8 @@
 'use strict';
 const EventEmitter = require('events');
 const path = require('path');
+const os = require('os');
+const pAll = require('p-all');
 const arrify = require('arrify');
 const globby = require('globby');
 const cpFile = require('cp-file');
@@ -29,7 +31,10 @@ const preprocessDestinationPath = (source, destination, options) => {
 	return path.join(destination, basename);
 };
 
-module.exports = (source, destination, options = {}) => {
+module.exports = (source, destination, {
+	concurrency = (os.cpus().lengh || 1) * 2,
+	...options
+} = {}) => {
 	const progressEmitter = new EventEmitter();
 
 	const promise = (async () => {
@@ -84,18 +89,20 @@ module.exports = (source, destination, options = {}) => {
 			}
 		};
 
-		return Promise.all(files.map(async sourcePath => {
-			const from = preprocessSourcePath(sourcePath, options);
-			const to = preprocessDestinationPath(sourcePath, destination, options);
+		return pAll(files.map(sourcePath => {
+			return async () => {
+				const from = preprocessSourcePath(sourcePath, options);
+				const to = preprocessDestinationPath(sourcePath, destination, options);
 
-			try {
-				await cpFile(from, to, options).on('progress', fileProgressHandler);
-			} catch (error) {
-				throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
-			}
+				try {
+					await cpFile(from, to, options).on('progress', fileProgressHandler);
+				} catch (error) {
+					throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
+				}
 
-			return to;
-		}));
+				return to;
+			};
+		}), {concurrency});
 	})();
 
 	promise.on = (...arguments_) => {
