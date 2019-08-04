@@ -1,59 +1,59 @@
 {
-    "name": "cpy",
-    "version": "7.3.0",
-    "description": "Copy files",
-    "license": "MIT",
-    "repository": "sindresorhus/cpy",
-    "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "sindresorhus.com"
-    },
-    "engines": {
-        "node": ">=8"
-    },
-    "scripts": {
-        "test": "xo && ava && tsd"
-    },
-    "files": [
-        "cpy-error.js",
-        "index.js",
-        "index.d.ts"
-    ],
-    "keywords": [
-        "copy",
-        "cp",
-        "cpy",
-        "file",
-        "files",
-        "clone",
-        "fs",
-        "stream",
-        "glob",
-        "file-system",
-        "ncp",
-        "fast",
-        "quick",
-        "data",
-        "content",
-        "contents",
-        "cpx",
-        "directory",
-        "directories"
-    ],
-    "dependencies": {
-        "arrify": "^2.0.1",
-        "cp-file": "^7.0.0",
-        "globby": "^9.2.0",
-        "nested-error-stacks": "^2.1.0",
-        "p-all": "^2.1.0",
-        "junk": "^3.1.0"
-    },
-    "devDependencies": {
-        "ava": "^2.1.0",
-        "rimraf": "^2.6.3",
-        "tempfile": "^3.0.0",
-        "tsd": "^0.7.2",
-        "xo": "^0.24.0"
-    }
+	"name": "cpy",
+	"version": "7.3.0",
+	"description": "Copy files",
+	"license": "MIT",
+	"repository": "sindresorhus/cpy",
+	"author": {
+		"name": "Sindre Sorhus",
+		"email": "sindresorhus@gmail.com",
+		"url": "sindresorhus.com"
+	},
+	"engines": {
+		"node": ">=8"
+	},
+	"scripts": {
+		"test": "xo && ava && tsd"
+	},
+	"files": [
+		"cpy-error.js",
+		"index.js",
+		"index.d.ts"
+	],
+	"keywords": [
+		"copy",
+		"cp",
+		"cpy",
+		"file",
+		"files",
+		"clone",
+		"fs",
+		"stream",
+		"glob",
+		"file-system",
+		"ncp",
+		"fast",
+		"quick",
+		"data",
+		"content",
+		"contents",
+		"cpx",
+		"directory",
+		"directories"
+	],
+	"dependencies": {
+		"arrify": "^2.0.1",
+		"cp-file": "^7.0.0",
+		"globby": "^9.2.0",
+		"nested-error-stacks": "^2.1.0",
+		"p-all": "^2.1.0",
+		"junk": "^3.1.0"
+	},
+	"devDependencies": {
+		"ava": "^2.1.0",
+		"rimraf": "^2.6.3",
+		"tempfile": "^3.0.0",
+		"tsd": "^0.7.2",
+		"xo": "^0.24.0"
+	}
 }
