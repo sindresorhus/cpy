@@ -39,6 +39,13 @@ declare namespace cpy {
 		@default (os.cpus().length || 1) * 2
 		*/
 		readonly concurrency?: number;
+
+		/**
+		Ignore junk files.
+
+		@default true
+		*/
+		readonly ignoreJunk?: boolean;
 	}
 
 	interface ProgressData {

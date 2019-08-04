@@ -6,7 +6,12 @@ const pAll = require('p-all');
 const arrify = require('arrify');
 const globby = require('globby');
 const cpFile = require('cp-file');
+const junk = require('junk');
 const CpyError = require('./cpy-error');
+
+const defaultOptions = {
+	ignoreJunk: true
+};
 
 const preprocessSourcePath = (source, options) => options.cwd ? path.resolve(options.cwd, source) : source;
 
@@ -36,6 +41,7 @@ module.exports = (source, destination, {
 	...options
 } = {}) => {
 	const progressEmitter = new EventEmitter();
+	options = {...defaultOptions, ...options};
 
 	const promise = (async () => {
 		source = arrify(source);
@@ -51,6 +57,10 @@ module.exports = (source, destination, {
 		let files;
 		try {
 			files = await globby(source, options);
+
+			if (options.ignoreJunk) {
+				files = files.filter(file => junk.not(path.basename(file)));
+			}
 		} catch (error) {
 			throw new CpyError(`Cannot glob \`${source}\`: ${error.message}`, error);
 		}
