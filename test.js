@@ -138,8 +138,9 @@ test('glob errors are CpyErrors', async t => {
 test('throws on non-existing file', async t => {
 	fs.mkdirSync(t.context.tmp);
 
-	const error = await t.throwsAsync(cpy(['no-file'], t.context.tmp));
-	t.true(error instanceof CpyError);
+	await t.throwsAsync(cpy(['no-file'], t.context.tmp), {
+		instanceOf: CpyError
+	});
 });
 
 test('reports copy progress of single file', async t => {
