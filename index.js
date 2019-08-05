@@ -3,6 +3,7 @@ const EventEmitter = require('events');
 const path = require('path');
 const arrify = require('arrify');
 const globby = require('globby');
+const hasGlob = require('has-glob');
 const cpFile = require('cp-file');
 const CpyError = require('./cpy-error');
 
@@ -50,7 +51,7 @@ module.exports = (source, destination, options = {}) => {
 			throw new CpyError(`Cannot glob \`${source}\`: ${error.message}`, error);
 		}
 
-		if (files.length === 0) {
+		if (files.length === 0 && !hasGlob(source)) {
 			throw new CpyError(`Cannot copy \`${source}\`: the file doesn't exist`);
 		}
 

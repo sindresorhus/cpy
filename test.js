@@ -151,6 +151,12 @@ test('throws on multiple non-existing files', async t => {
 	});
 });
 
+test('does not throw when not matching any file on glob pattern', async t => {
+	fs.mkdirSync(t.context.tmp);
+
+	await t.notThrowsAsync(cpy(['*.js'], t.context.tmp));
+});
+
 test('reports copy progress of single file', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
