@@ -143,6 +143,14 @@ test('throws on non-existing file', async t => {
 	});
 });
 
+test('throws on multiple non-existing files', async t => {
+	fs.mkdirSync(t.context.tmp);
+
+	await t.throwsAsync(cpy(['no-file1', 'no-file2'], t.context.tmp), {
+		instanceOf: CpyError
+	});
+});
+
 test('reports copy progress of single file', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
