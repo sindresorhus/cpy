@@ -37,7 +37,7 @@ const preprocessDestinationPath = (source, destination, options) => {
 };
 
 module.exports = (source, destination, {
-	concurrency = (os.cpus().lengh || 1) * 2,
+	concurrency = (os.cpus().length || 1) * 2,
 	...options
 } = {}) => {
 	const progressEmitter = new EventEmitter();
