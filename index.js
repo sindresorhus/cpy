@@ -1,11 +1,18 @@
 'use strict';
 const EventEmitter = require('events');
 const path = require('path');
+const os = require('os');
+const pAll = require('p-all');
 const arrify = require('arrify');
 const globby = require('globby');
 const hasGlob = require('has-glob');
 const cpFile = require('cp-file');
+const junk = require('junk');
 const CpyError = require('./cpy-error');
+
+const defaultOptions = {
+	ignoreJunk: true
+};
 
 const preprocessSourcePath = (source, options) => options.cwd ? path.resolve(options.cwd, source) : source;
 
@@ -30,8 +37,12 @@ const preprocessDestinationPath = (source, destination, options) => {
 	return path.join(destination, basename);
 };
 
-module.exports = (source, destination, options = {}) => {
+module.exports = (source, destination, {
+	concurrency = (os.cpus().length || 1) * 2,
+	...options
+} = {}) => {
 	const progressEmitter = new EventEmitter();
+	options = {...defaultOptions, ...options};
 
 	const promise = (async () => {
 		source = arrify(source);
@@ -47,6 +58,10 @@ module.exports = (source, destination, options = {}) => {
 		let files;
 		try {
 			files = await globby(source, options);
+
+			if (options.ignoreJunk) {
+				files = files.filter(file => junk.not(path.basename(file)));
+			}
 		} catch (error) {
 			throw new CpyError(`Cannot glob \`${source}\`: ${error.message}`, error);
 		}
@@ -80,18 +95,20 @@ module.exports = (source, destination, options = {}) => {
 			}
 		};
 
-		return Promise.all(files.map(async sourcePath => {
-			const from = preprocessSourcePath(sourcePath, options);
-			const to = preprocessDestinationPath(sourcePath, destination, options);
+		return pAll(files.map(sourcePath => {
+			return async () => {
+				const from = preprocessSourcePath(sourcePath, options);
+				const to = preprocessDestinationPath(sourcePath, destination, options);
 
-			try {
-				await cpFile(from, to, options).on('progress', fileProgressHandler);
-			} catch (error) {
-				throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
-			}
+				try {
+					await cpFile(from, to, options).on('progress', fileProgressHandler);
+				} catch (error) {
+					throw new CpyError(`Cannot copy from \`${from}\` to \`${to}\`: ${error.message}`, error);
+				}
 
-			return to;
-		}));
+				return to;
+			};
+		}), {concurrency});
 	})();
 
 	promise.on = (...arguments_) => {

@@ -49,6 +49,11 @@ test('copy array of files', async t => {
 	t.is(read('package.json'), read(t.context.tmp, 'package.json'));
 });
 
+test('throws on invalid concurrency value', async t => {
+	await t.throwsAsync(cpy(['license', 'package.json'], t.context.tmp, {concurrency: -2}));
+	await t.throwsAsync(cpy(['license', 'package.json'], t.context.tmp, {concurrency: 'foo'}));
+});
+
 test('cwd', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
@@ -155,6 +160,66 @@ test('does not throw when not matching any file on glob pattern', async t => {
 	fs.mkdirSync(t.context.tmp);
 
 	await t.notThrowsAsync(cpy(['*.js'], t.context.tmp));
+});
+
+test('junk files are ignored', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/Thumbs.db'), 'lorem ipsum');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/foo'), 'lorem ipsum');
+
+	let report;
+
+	await cpy('*', t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd'), ignoreJunk: true})
+		.on('progress', event => {
+			report = event;
+		});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 1);
+	t.is(report.completedFiles, 1);
+	t.is(report.completedSize, 11);
+	t.is(report.percent, 1);
+});
+
+test('junk files are copied', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/Thumbs.db'), 'lorem ipsum');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/foo'), 'lorem ipsum');
+
+	let report;
+
+	await cpy('*', t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd'), ignoreJunk: false})
+		.on('progress', event => {
+			report = event;
+		});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 2);
+	t.is(report.completedFiles, 2);
+	t.is(report.completedSize, 22);
+	t.is(report.percent, 1);
+});
+
+test('nested junk files are ignored', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/Thumbs.db'), 'lorem ispum');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/test'), 'lorem ispum');
+
+	let report;
+
+	await cpy(['cwd/Thumbs.db', 'cwd/test'], t.context.tmp, {cwd: t.context.tmp, ignoreJunk: true})
+		.on('progress', event => {
+			report = event;
+		});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 1);
+	t.is(report.completedFiles, 1);
+	t.is(report.completedSize, 11);
+	t.is(report.percent, 1);
 });
 
 test('reports copy progress of single file', async t => {

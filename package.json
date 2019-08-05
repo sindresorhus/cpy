@@ -46,7 +46,9 @@
 		"cp-file": "^7.0.0",
 		"globby": "^9.2.0",
 		"has-glob": "^1.0.0",
-		"nested-error-stacks": "^2.1.0"
+		"nested-error-stacks": "^2.1.0",
+		"p-all": "^2.1.0",
+		"junk": "^3.1.0"
 	},
 	"devDependencies": {
 		"ava": "^2.1.0",
