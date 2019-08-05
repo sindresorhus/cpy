@@ -37,13 +37,13 @@ const cpy = require('cpy');
 
 Returns a `Promise<string[]>` with the destination file paths.
 
-If the file does not exist, an error will be thrown (does not apply to globs).
-
 #### source
 
 Type: `string | string[]`
 
 Files to copy.
+
+If any of the files do not exist, an error will be thrown (does not apply to globs).
 
 #### destination
 
