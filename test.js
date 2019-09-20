@@ -162,10 +162,12 @@ test('does not throw when not matching any file on glob pattern', async t => {
 	await t.notThrowsAsync(cpy(['*.js'], t.context.tmp));
 });
 
-test('does not throw on mixed path and glob', async t => {
+test('throws on mixed path and glob if path does not exist', async t => {
 	fs.mkdirSync(t.context.tmp);
 
-	await t.notThrowsAsync(cpy(['*.js', 'readme.md'], t.context.tmp));
+	await t.throwsAsync(cpy(['*', 'no-file'], t.context.tmp), {
+		instanceOf: CpyError
+	});
 });
 
 test('junk files are ignored', async t => {
@@ -216,7 +218,7 @@ test('nested junk files are ignored', async t => {
 
 	let report;
 
-	await cpy(['cwd/Thumbs.db', 'cwd/test'], t.context.tmp, {cwd: t.context.tmp, ignoreJunk: true})
+	await cpy(['cwd/*'], t.context.tmp, {cwd: t.context.tmp, ignoreJunk: true})
 		.on('progress', event => {
 			report = event;
 		});
