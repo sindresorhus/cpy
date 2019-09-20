@@ -5,21 +5,25 @@ declare namespace cpy {
 	interface SourceFile {
 		/**
 		Resolved path to file.
+		@example `/tmp/foo.bar`
 		*/
 		readonly path: string,
 
 		/**
 		Filename.
+		@example `foo.bar`
 		*/
 		readonly name: string,
 
 		/**
 		Filename without extension.
+		@example `foo`
 		*/
 		readonly nameWithoutExtension: string,
 
 		/**
 		File extension.
+		@example `.bar`
 		*/
 		readonly extension: string,
 	}
