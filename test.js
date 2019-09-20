@@ -57,12 +57,20 @@ test('throws on invalid concurrency value', async t => {
 test('copy array of files with filter', async t => {
 	await cpy(['license', 'package.json'], t.context.tmp, {
 		filter: file => {
-			t.is(typeof file.path, 'string');
-			t.is(typeof file.resolvedPath, 'string');
-			t.is(typeof file.name, 'string');
-			t.is(typeof file.nameWithoutExtension, 'string');
-			t.is(typeof file.extension, 'string');
-			return file.path !== 'license';
+			console.log(file);
+			if (file.path.endsWith('/license')) {
+				t.is(file.path, path.join(process.cwd(), 'license'));
+				t.is(file.name, 'license');
+				t.is(file.nameWithoutExtension, 'license');
+				t.is(file.extension, '');
+			} else if (file.path.endsWith('/package.json')) {
+				t.is(file.path, path.join(process.cwd(), 'package.json'));
+				t.is(file.name, 'package.json');
+				t.is(file.nameWithoutExtension, 'package');
+				t.is(file.extension, '.json');
+			}
+
+			return !file.path.endsWith('/license');
 		}
 	});
 
@@ -73,12 +81,19 @@ test('copy array of files with filter', async t => {
 test('copy array of files with async filter', async t => {
 	await cpy(['license', 'package.json'], t.context.tmp, {
 		filter: async file => {
-			t.is(typeof file.path, 'string');
-			t.is(typeof file.resolvedPath, 'string');
-			t.is(typeof file.name, 'string');
-			t.is(typeof file.nameWithoutExtension, 'string');
-			t.is(typeof file.extension, 'string');
-			return file.path !== 'license';
+			if (file.path.endsWith('/license')) {
+				t.is(file.path, path.join(process.cwd(), 'license'));
+				t.is(file.name, 'license');
+				t.is(file.nameWithoutExtension, 'license');
+				t.is(file.extension, '');
+			} else if (file.path.endsWith('/package.json')) {
+				t.is(file.path, path.join(process.cwd(), 'package.json'));
+				t.is(file.name, 'package.json');
+				t.is(file.nameWithoutExtension, 'package');
+				t.is(file.extension, '.json');
+			}
+
+			return !file.path.endsWith('/license');
 		}
 	});
 

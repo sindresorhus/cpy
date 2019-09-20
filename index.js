@@ -16,26 +16,26 @@ const defaultOptions = {
 };
 
 class SourceFile {
-	constructor(path, resolvedPath) {
+	constructor(relativePath, path) {
 		this.path = path;
-		this.resolvedPath = resolvedPath;
+		Object.defineProperty(this, 'relativePath', {enumerable: false, value: relativePath});
 		Object.freeze(this);
 	}
 
 	get name() {
-		return path.basename(this.path);
+		return path.basename(this.relativePath);
 	}
 
 	get nameWithoutExtension() {
-		return path.basename(this.path, this.extension);
+		return path.basename(this.relativePath, this.extension);
 	}
 
 	get extension() {
-		return path.extname(this.path);
+		return path.extname(this.relativePath);
 	}
 }
 
-const preprocessSourcePath = (source, options) => options.cwd ? path.resolve(options.cwd, source) : source;
+const preprocessSourcePath = (source, options) => path.resolve(options.cwd ? options.cwd : process.cwd(), source);
 
 const preprocessDestinationPath = (source, destination, options) => {
 	let basename = path.basename(source);
@@ -137,12 +137,12 @@ module.exports = (source, destination, {
 		};
 
 		return pMap(sources, async source => {
-			const to = preprocessDestinationPath(source.path, destination, options);
+			const to = preprocessDestinationPath(source.relativePath, destination, options);
 
 			try {
-				await cpFile(source.resolvedPath, to, options).on('progress', fileProgressHandler);
+				await cpFile(source.path, to, options).on('progress', fileProgressHandler);
 			} catch (error) {
-				throw new CpyError(`Cannot copy from \`${source.path}\` to \`${to}\`: ${error.message}`, error);
+				throw new CpyError(`Cannot copy from \`${source.relativePath}\` to \`${to}\`: ${error.message}`, error);
 			}
 
 			return to;

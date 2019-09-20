@@ -4,22 +4,17 @@ import {Options as CpFileOptions} from 'cp-file';
 declare namespace cpy {
 	interface SourceFile {
 		/**
-		Path to file.
+		Resolved path to file.
 		*/
 		readonly path: string,
 
 		/**
-		Resolved path to file.
-		*/
-		readonly resolvedPath: string,
-
-		/**
-		File name.
+		Filename.
 		*/
 		readonly name: string,
 
 		/**
-		File name without extension.
+		Filename without extension.
 		*/
 		readonly nameWithoutExtension: string,
 
