@@ -43,6 +43,8 @@ Type: `string | string[]`
 
 Files to copy.
 
+If any of the files do not exist, an error will be thrown (does not apply to globs).
+
 #### destination
 
 Type: `string`

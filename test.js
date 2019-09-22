@@ -140,21 +140,34 @@ test('glob errors are CpyErrors', async t => {
 	t.true(error instanceof CpyError);
 });
 
-test('reports copy progress of no files', async t => {
+test('throws on non-existing file', async t => {
 	fs.mkdirSync(t.context.tmp);
-	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
 
-	let report;
-	await cpy('*', t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')})
-		.on('progress', event => {
-			report = event;
-		});
+	await t.throwsAsync(cpy(['no-file'], t.context.tmp), {
+		instanceOf: CpyError
+	});
+});
 
-	t.not(report, undefined);
-	t.is(report.totalFiles, 0);
-	t.is(report.completedFiles, 0);
-	t.is(report.completedSize, 0);
-	t.is(report.percent, 1);
+test('throws on multiple non-existing files', async t => {
+	fs.mkdirSync(t.context.tmp);
+
+	await t.throwsAsync(cpy(['no-file1', 'no-file2'], t.context.tmp), {
+		instanceOf: CpyError
+	});
+});
+
+test('does not throw when not matching any file on glob pattern', async t => {
+	fs.mkdirSync(t.context.tmp);
+
+	await t.notThrowsAsync(cpy(['*.js'], t.context.tmp));
+});
+
+test('throws on mixed path and glob if path does not exist', async t => {
+	fs.mkdirSync(t.context.tmp);
+
+	await t.throwsAsync(cpy(['*', 'no-file'], t.context.tmp), {
+		instanceOf: CpyError
+	});
 });
 
 test('junk files are ignored', async t => {
@@ -205,7 +218,7 @@ test('nested junk files are ignored', async t => {
 
 	let report;
 
-	await cpy(['cwd/Thumbs.db', 'cwd/test'], t.context.tmp, {cwd: t.context.tmp, ignoreJunk: true})
+	await cpy(['cwd/*'], t.context.tmp, {cwd: t.context.tmp, ignoreJunk: true})
 		.on('progress', event => {
 			report = event;
 		});

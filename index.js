@@ -5,6 +5,7 @@ const os = require('os');
 const pAll = require('p-all');
 const arrify = require('arrify');
 const globby = require('globby');
+const isGlob = require('is-glob');
 const cpFile = require('cp-file');
 const junk = require('junk');
 const CpyError = require('./cpy-error');
@@ -65,13 +66,10 @@ module.exports = (source, destination, {
 			throw new CpyError(`Cannot glob \`${source}\`: ${error.message}`, error);
 		}
 
-		if (files.length === 0) {
-			progressEmitter.emit('progress', {
-				totalFiles: 0,
-				percent: 1,
-				completedFiles: 0,
-				completedSize: 0
-			});
+		const sourcePaths = source.filter(value => !isGlob(value));
+
+		if (files.length === 0 || (sourcePaths.length > 0 && !sourcePaths.every(value => files.includes(value)))) {
+			throw new CpyError(`Cannot copy \`${source}\`: the file doesn't exist`);
 		}
 
 		const fileProgressHandler = event => {
