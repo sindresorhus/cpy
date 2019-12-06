@@ -42,7 +42,11 @@ module.exports = (source, destination, {
 	...options
 } = {}) => {
 	const progressEmitter = new EventEmitter();
-	options = {...defaultOptions, ...options};
+
+	options = {
+		...defaultOptions,
+		...options
+	};
 
 	const promise = (async () => {
 		source = arrify(source);

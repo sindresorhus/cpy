@@ -2,7 +2,6 @@
 
 > Copy files
 
-
 ## Why
 
 - Fast by using streams.
@@ -11,13 +10,11 @@
 - User-friendly error messages.
 - Progress reporting.
 
-
 ## Install
 
 ```
 $ npm install cpy
 ```
-
 
 ## Usage
 
@@ -29,7 +26,6 @@ const cpy = require('cpy');
 	console.log('Files copied!');
 })();
 ```
-
 
 ## API
 
@@ -61,21 +57,21 @@ In addition, you can specify the below options.
 
 ##### cwd
 
-Type: `string`<br>
+Type: `string`\
 Default: `process.cwd()`
 
 Working directory to find source files.
 
 ##### overwrite
 
-Type: `boolean`<br>
+Type: `boolean`\
 Default: `true`
 
 Overwrite existing files.
 
 ##### parents
 
-Type: `boolean`<br>
+Type: `boolean`\
 Default: `false`
 
 Preserve path structure.
@@ -98,14 +94,14 @@ const cpy = require('cpy');
 
 ##### concurrency
 
-Type: `number`<br>
+Type: `number`\
 Default: `(os.cpus().length || 1) * 2`
 
 Number of files being copied concurrently.
 
 ##### ignoreJunk
 
-Type: `boolean`<br>
+Type: `boolean`\
 Default: `true`
 
 Ignores [junk](https://github.com/sindresorhus/junk) files.
@@ -124,7 +120,8 @@ Type: `Function`
 {
 	completedFiles: number,
 	totalFiles: number,
-	completedSize: number
+	completedSize: number,
+	percent: number
 }
 ```
 
@@ -140,7 +137,6 @@ Note that the `.on()` method is available only right after the initial `cpy` cal
 	});
 })();
 ```
-
 
 ## Related
 
