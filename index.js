@@ -72,7 +72,7 @@ module.exports = (source, destination, {
 
 		const sourcePaths = source.filter(value => !isGlob(value));
 
-		if (files.length === 0 || (sourcePaths.length > 0 && !sourcePaths.every(value => files.includes(value)))) {
+		if (files.length === 0 && (sourcePaths.length > 0 && !sourcePaths.every(value => files.includes(value)))) {
 			throw new CpyError(`Cannot copy \`${source}\`: the file doesn't exist`);
 		}
 

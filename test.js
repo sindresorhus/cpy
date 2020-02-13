@@ -159,7 +159,7 @@ test('throws on multiple non-existing files', async t => {
 test('does not throw when not matching any file on glob pattern', async t => {
 	fs.mkdirSync(t.context.tmp);
 
-	await t.notThrowsAsync(cpy(['*.js'], t.context.tmp));
+	await t.notThrowsAsync(cpy(['*.nonexistent'], t.context.tmp));
 });
 
 test('throws on mixed path and glob if path does not exist', async t => {
