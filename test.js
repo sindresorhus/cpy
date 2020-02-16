@@ -162,14 +162,6 @@ test('does not throw when not matching any file on glob pattern', async t => {
 	await t.notThrowsAsync(cpy(['*.js'], t.context.tmp));
 });
 
-test('throws on mixed path and glob if path does not exist', async t => {
-	fs.mkdirSync(t.context.tmp);
-
-	await t.throwsAsync(cpy(['*', 'no-file'], t.context.tmp), {
-		instanceOf: CpyError
-	});
-});
-
 test('junk files are ignored', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
