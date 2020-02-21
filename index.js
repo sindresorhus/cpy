@@ -5,7 +5,7 @@ const os = require('os');
 const pAll = require('p-all');
 const arrify = require('arrify');
 const globby = require('globby');
-const isGlob = require('is-glob');
+const hasGlob = require('has-glob');
 const cpFile = require('cp-file');
 const junk = require('junk');
 const CpyError = require('./cpy-error');
@@ -70,9 +70,7 @@ module.exports = (source, destination, {
 			throw new CpyError(`Cannot glob \`${source}\`: ${error.message}`, error);
 		}
 
-		const sourcePaths = source.filter(value => !isGlob(value));
-
-		if (files.length === 0 || (sourcePaths.length > 0 && !sourcePaths.every(value => files.includes(value)))) {
+		if (files.length === 0 && !hasGlob(source)) {
 			throw new CpyError(`Cannot copy \`${source}\`: the file doesn't exist`);
 		}
 
