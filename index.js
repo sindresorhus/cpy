@@ -18,7 +18,7 @@ const defaultOptions = {
 class SourceFile {
 	constructor(relativePath, path) {
 		this.path = path;
-		Object.defineProperty(this, 'relativePath', {enumerable: false, value: relativePath});
+		this.relativePath = relativePath;
 		Object.freeze(this);
 	}
 
@@ -27,11 +27,11 @@ class SourceFile {
 	}
 
 	get nameWithoutExtension() {
-		return path.basename(this.relativePath, this.extension);
+		return path.basename(this.relativePath, path.extname(this.relativePath));
 	}
 
 	get extension() {
-		return path.extname(this.relativePath);
+		return path.extname(this.relativePath).slice(1);
 	}
 }
 
