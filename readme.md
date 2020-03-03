@@ -127,27 +127,38 @@ const cpy = require('cpy');
 
 ###### path
 
-Type: `string`
+Type: `string`\
+Example: `/tmp/dir/foo.bar`
 
-Resolved path to file. Example: `/tmp/foo.bar`.
+Resolved path to file.
+
+###### relativePath
+
+Type: `string`\
+Example: `dir/foo.bar` if `cwd` was `/tmp`
+
+Relative path to file from `cwd`.
 
 ###### name
 
-Type: `string`
+Type: `string`\
+Example: `foo.bar`
 
-Filename. Example: `foo.bar`.
+Filename.
 
 ###### nameWithoutExtension
 
-Type: `string`
+Type: `string`\
+Example: `foo`.
 
-File name without extension. Example: `foo`.
+File name without extension.
 
 ###### extension
 
-Type: `string`
+Type: `string`\
+Example: `bar`.
 
-File extension. Example: `.bar`.
+File extension.
 
 
 ## Progress reporting

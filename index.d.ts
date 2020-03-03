@@ -29,7 +29,7 @@ declare namespace cpy {
 
 		/**
 		File extension.
-		@example `.bar`
+		@example `bar`
 		*/
 		readonly extension: string,
 	}
