@@ -131,35 +131,35 @@ const cpy = require('cpy');
 ###### path
 
 Type: `string`\
-Example: `/tmp/dir/foo.js`
+Example: `'/tmp/dir/foo.js'`
 
 Resolved path to the file.
 
 ###### relativePath
 
 Type: `string`\
-Example: `dir/foo.js` if `cwd` was `/tmp`
+Example: `'dir/foo.js'` if `cwd` was `'/tmp'`
 
 Relative path to the file from `cwd`.
 
 ###### name
 
 Type: `string`\
-Example: `foo.js`
+Example: `'foo.js'`
 
 Filename with extension.
 
 ###### nameWithoutExtension
 
 Type: `string`\
-Example: `foo`.
+Example: `'foo'`
 
 Filename without extension.
 
 ###### extension
 
 Type: `string`\
-Example: `js`.
+Example: `'js'`
 
 File extension.
 
