@@ -4,39 +4,39 @@ import {Options as CpFileOptions} from 'cp-file';
 declare namespace cpy {
 	interface SourceFile {
 		/**
-		Resolved path to file.
+		Resolved path to the file.
 
 		@example '/tmp/dir/foo.js'
 		*/
-		readonly path: string,
+		readonly path: string;
 
 		/**
-		Relative path to file from `cwd`.
+		Relative path to the file from `cwd`.
 
 		@example 'dir/foo.js' if `cwd` was '/tmp'
 		*/
-		readonly relativePath: string,
+		readonly relativePath: string;
 
 		/**
-		Filename.
+		Filename with extension.
 
 		@example 'foo.js'
 		*/
-		readonly name: string,
+		readonly name: string;
 
 		/**
 		Filename without extension.
 
 		@example 'foo'
 		*/
-		readonly nameWithoutExtension: string,
+		readonly nameWithoutExtension: string;
 
 		/**
 		File extension.
 
 		@example 'js'
 		*/
-		readonly extension: string,
+		readonly extension: string;
 	}
 
 	interface Options extends Readonly<GlobbyOptions>, CpFileOptions {
