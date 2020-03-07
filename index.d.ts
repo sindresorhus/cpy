@@ -85,8 +85,11 @@ declare namespace cpy {
 		readonly ignoreJunk?: boolean;
 
 		/**
-		Function to filter files to copy. Should accept source file object as argument.
-		Return true to include, false to exclude. Can also return a Promise that resolves to true or false.
+		Function to filter files to copy.
+
+		Receives a source file object as the first argument.
+
+		Return true to include, false to exclude. You can also return a Promise that resolves to true or false.
 
 		@example
 		```
