@@ -2,6 +2,43 @@ import {GlobbyOptions} from 'globby';
 import {Options as CpFileOptions} from 'cp-file';
 
 declare namespace cpy {
+	interface SourceFile {
+		/**
+		Resolved path to the file.
+
+		@example '/tmp/dir/foo.js'
+		*/
+		readonly path: string;
+
+		/**
+		Relative path to the file from `cwd`.
+
+		@example 'dir/foo.js' if `cwd` was '/tmp'
+		*/
+		readonly relativePath: string;
+
+		/**
+		Filename with extension.
+
+		@example 'foo.js'
+		*/
+		readonly name: string;
+
+		/**
+		Filename without extension.
+
+		@example 'foo'
+		*/
+		readonly nameWithoutExtension: string;
+
+		/**
+		File extension.
+
+		@example 'js'
+		*/
+		readonly extension: string;
+	}
+
 	interface Options extends Readonly<GlobbyOptions>, CpFileOptions {
 		/**
 		Working directory to find source files.
@@ -46,6 +83,26 @@ declare namespace cpy {
 		@default true
 		*/
 		readonly ignoreJunk?: boolean;
+
+		/**
+		Function to filter files to copy.
+
+		Receives a source file object as the first argument.
+
+		Return true to include, false to exclude. You can also return a Promise that resolves to true or false.
+
+		@example
+		```
+		import cpy = require('cpy');
+
+		(async () => {
+			await cpy('foo', 'destination', {
+				filter: file => file.extension !== '.nocopy'
+			});
+		})();
+		```
+		*/
+		readonly filter?: (file: SourceFile) => (boolean | Promise<boolean>);
 	}
 
 	interface ProgressData {

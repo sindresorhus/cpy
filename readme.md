@@ -106,6 +106,63 @@ Default: `true`
 
 Ignores [junk](https://github.com/sindresorhus/junk) files.
 
+##### filter
+
+Type: `Function`
+
+Function to filter files to copy.
+
+Receives a source file object as the first argument.
+
+Return true to include, false to exclude. You can also return a Promise that resolves to true or false.
+
+```js
+const cpy = require('cpy');
+
+(async () => {
+	await cpy('foo', 'destination', {
+		filter: file => file.extension !== '.nocopy'
+	});
+})();
+```
+
+##### Source file object
+
+###### path
+
+Type: `string`\
+Example: `'/tmp/dir/foo.js'`
+
+Resolved path to the file.
+
+###### relativePath
+
+Type: `string`\
+Example: `'dir/foo.js'` if `cwd` was `'/tmp'`
+
+Relative path to the file from `cwd`.
+
+###### name
+
+Type: `string`\
+Example: `'foo.js'`
+
+Filename with extension.
+
+###### nameWithoutExtension
+
+Type: `string`\
+Example: `'foo'`
+
+Filename without extension.
+
+###### extension
+
+Type: `string`\
+Example: `'js'`
+
+File extension.
+
 ## Progress reporting
 
 ### cpy.on('progress', handler)
