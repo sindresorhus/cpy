@@ -110,8 +110,11 @@ Ignores [junk](https://github.com/sindresorhus/junk) files.
 
 Type: `Function`
 
-Function to filter files to copy. Should accept source file object as argument.
-Return true to include, false to exclude. Can also return a Promise that resolves to true or false.
+Function to filter files to copy.
+
+Receives a source file object as the first argument.
+
+Return true to include, false to exclude. You can also return a Promise that resolves to true or false.
 
 ```js
 const cpy = require('cpy');
@@ -128,38 +131,37 @@ const cpy = require('cpy');
 ###### path
 
 Type: `string`\
-Example: `/tmp/dir/foo.bar`
+Example: `/tmp/dir/foo.js`
 
-Resolved path to file.
+Resolved path to the file.
 
 ###### relativePath
 
 Type: `string`\
-Example: `dir/foo.bar` if `cwd` was `/tmp`
+Example: `dir/foo.js` if `cwd` was `/tmp`
 
-Relative path to file from `cwd`.
+Relative path to the file from `cwd`.
 
 ###### name
 
 Type: `string`\
-Example: `foo.bar`
+Example: `foo.js`
 
-Filename.
+Filename with extension.
 
 ###### nameWithoutExtension
 
 Type: `string`\
 Example: `foo`.
 
-File name without extension.
+Filename without extension.
 
 ###### extension
 
 Type: `string`\
-Example: `bar`.
+Example: `js`.
 
 File extension.
-
 
 ## Progress reporting
 
