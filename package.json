@@ -14,7 +14,12 @@
 		"node": ">=8"
 	},
 	"scripts": {
-		"test": "xo && ava && tsd"
+		"test": "xo && ava && tsd",
+		"test-simple": "ava"
+	},
+	"prettier": {
+		"bracketSpacing": false,
+		"singleQuote": true
 	},
 	"files": [
 		"cpy-error.js",
@@ -45,15 +50,16 @@
 	"dependencies": {
 		"arrify": "^2.0.1",
 		"cp-file": "^7.0.0",
-		"globby": "^9.2.0",
-		"has-glob": "^1.0.0",
+		"glob": "^7.1.6",
 		"junk": "^3.1.0",
+		"mkdirp": "^1.0.4",
 		"nested-error-stacks": "^2.1.0",
 		"p-all": "^2.1.0",
 		"p-filter": "^2.1.0",
 		"p-map": "^3.0.0"
 	},
 	"devDependencies": {
+		"@types/mkdirp": "^1.0.1",
 		"ava": "^2.1.0",
 		"rimraf": "^3.0.0",
 		"tempfile": "^3.0.0",

@@ -2,20 +2,13 @@ import {GlobbyOptions} from 'globby';
 import {Options as CpFileOptions} from 'cp-file';
 
 declare namespace cpy {
-	interface SourceFile {
+	interface Entry {
 		/**
 		Resolved path to the file.
 
 		@example '/tmp/dir/foo.js'
 		*/
 		readonly path: string;
-
-		/**
-		Relative path to the file from `cwd`.
-
-		@example 'dir/foo.js' if `cwd` was '/tmp'
-		*/
-		readonly relativePath: string;
 
 		/**
 		Filename with extension.
@@ -68,7 +61,7 @@ declare namespace cpy {
 		})();
 		```
 		*/
-		readonly rename?: string | ((basename: string) => string);
+		// readonly rename?: string | ((basename: string) => string);
 
 		/**
 		Number of files being copied concurrently.
@@ -102,7 +95,7 @@ declare namespace cpy {
 		})();
 		```
 		*/
-		readonly filter?: (file: SourceFile) => (boolean | Promise<boolean>);
+		readonly filter?: (file: Entry) => (boolean | Promise<boolean>);
 	}
 
 	interface ProgressData {
