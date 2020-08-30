@@ -129,9 +129,7 @@ const cpy = (
 		/**
 		 * @type {GlobPattern[]}
 		 */
-		let patterns = arrify(source).map(str => {
-			return str.split(sep).join('/');
-		});
+		let patterns = arrify(source).map(str => str.replace(/\\/g, '/'));
 
 		if (patterns.length === 0 || !destination) {
 			throw new CpyError('`source` and `destination` required');
