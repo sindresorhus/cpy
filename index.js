@@ -74,13 +74,6 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 			return join(destination, entry.name);
 		}
 
-		if (isAbsolute(destination)) {
-			return join(
-				destination,
-				relative(entry.pattern.normalizedPath, entry.path)
-			);
-		}
-
 		return join(
 			destination,
 			relative(entry.pattern.normalizedPath, entry.path)
