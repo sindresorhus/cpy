@@ -39,7 +39,6 @@ const preprocessSourcePath = (source, options) => path.resolve(options.cwd ? opt
 
 const preprocessDestinationPath = (source, destination, options) => {
 	let basename = path.basename(source);
-	const dirname = path.dirname(source);
 
 	if (typeof options.rename === 'string') {
 		basename = options.rename;
@@ -52,7 +51,9 @@ const preprocessDestinationPath = (source, destination, options) => {
 	}
 
 	if (options.parents) {
-		return path.join(destination, dirname, basename);
+		const dirname = path.dirname(source);
+		const parsedDirectory = path.parse(dirname);
+		return path.join(destination, dirname.replace(parsedDirectory.root, path.sep), basename);
 	}
 
 	return path.join(destination, basename);

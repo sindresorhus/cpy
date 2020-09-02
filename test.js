@@ -1,39 +1,42 @@
-import path from 'path';
-import fs from 'fs';
-import crypto from 'crypto';
-import rimraf from 'rimraf';
-import test from 'ava';
-import tempfile from 'tempfile';
-import CpyError from './cpy-error';
-import cpy from '.';
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const rimraf = require('rimraf');
+const test = require('ava');
+const tempy = require('tempy');
+const proxyquire = require('proxyquire');
+const CpyError = require('./cpy-error');
+const cpy = require('.');
 
 const read = (...args) => fs.readFileSync(path.join(...args), 'utf8');
+const cpyMockedError = module => {
+	return proxyquire('.', {
+		[module]() {
+			throw new Error(`${module}:\tERROR`);
+		}
+	});
+};
 
 test.beforeEach(t => {
-	t.context.tmp = tempfile();
-	t.context.EPERM = tempfile('EPERM');
-	fs.mkdirSync(t.context.EPERM, 0);
+	t.context.tmp = tempy.file();
+	t.context.dir = tempy.directory();
 });
 
 test.afterEach(t => {
 	rimraf.sync(t.context.tmp);
-	rimraf.sync(t.context.EPERM);
+	rimraf.sync(t.context.dir);
 });
 
 test('reject Errors on missing `source`', async t => {
-	const error1 = await t.throwsAsync(cpy, /`source`/);
-	t.true(error1 instanceof CpyError);
+	await t.throwsAsync(cpy, {message: /`source`/, instanceOf: CpyError});
 
-	const error2 = await t.throwsAsync(cpy(null, 'destination'), /`source`/);
-	t.true(error2 instanceof CpyError);
+	await t.throwsAsync(cpy(null, 'destination'), {message: /`source`/, instanceOf: CpyError});
 
-	const error3 = await t.throwsAsync(cpy([], 'destination'), /`source`/);
-	t.true(error3 instanceof CpyError);
+	await t.throwsAsync(cpy([], 'destination'), {message: /`source`/, instanceOf: CpyError});
 });
 
 test('reject Errors on missing `destination`', async t => {
-	const error = await t.throwsAsync(cpy('TARGET'), /`destination`/);
-	t.true(error instanceof CpyError);
+	await t.throwsAsync(cpy('TARGET'), {message: /`destination`/, instanceOf: CpyError});
 });
 
 test('copy single file', async t => {
@@ -57,13 +60,13 @@ test('throws on invalid concurrency value', async t => {
 test('copy array of files with filter', async t => {
 	await cpy(['license', 'package.json'], t.context.tmp, {
 		filter: file => {
-			if (file.path.endsWith('/license')) {
+			if (file.path.endsWith(`${path.sep}license`)) {
 				t.is(file.path, path.join(process.cwd(), 'license'));
 				t.is(file.relativePath, 'license');
 				t.is(file.name, 'license');
 				t.is(file.nameWithoutExtension, 'license');
 				t.is(file.extension, '');
-			} else if (file.path.endsWith('/package.json')) {
+			} else if (file.path.endsWith(`${path.sep}package.json`)) {
 				t.is(file.path, path.join(process.cwd(), 'package.json'));
 				t.is(file.relativePath, 'package.json');
 				t.is(file.name, 'package.json');
@@ -71,7 +74,7 @@ test('copy array of files with filter', async t => {
 				t.is(file.extension, 'json');
 			}
 
-			return !file.path.endsWith('/license');
+			return !file.path.endsWith(`${path.sep}license`);
 		}
 	});
 
@@ -82,13 +85,13 @@ test('copy array of files with filter', async t => {
 test('copy array of files with async filter', async t => {
 	await cpy(['license', 'package.json'], t.context.tmp, {
 		filter: async file => {
-			if (file.path.endsWith('/license')) {
+			if (file.path.endsWith(`${path.sep}license`)) {
 				t.is(file.path, path.join(process.cwd(), 'license'));
 				t.is(file.relativePath, 'license');
 				t.is(file.name, 'license');
 				t.is(file.nameWithoutExtension, 'license');
 				t.is(file.extension, '');
-			} else if (file.path.endsWith('/package.json')) {
+			} else if (file.path.endsWith(`${path.sep}package.json`)) {
 				t.is(file.path, path.join(process.cwd(), 'package.json'));
 				t.is(file.relativePath, 'package.json');
 				t.is(file.name, 'package.json');
@@ -96,7 +99,7 @@ test('copy array of files with async filter', async t => {
 				t.is(file.extension, 'json');
 			}
 
-			return !file.path.endsWith('/license');
+			return !file.path.endsWith(`${path.sep}license`);
 		}
 	});
 
@@ -140,7 +143,8 @@ test('path structure', async t => {
 
 	await cpy([path.join(t.context.tmp, 'cwd/hello.js')], t.context.tmp, {parents: true});
 
-	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, t.context.tmp, 'cwd/hello.js'));
+	const {root} = path.parse(t.context.tmp);
+	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, t.context.tmp.replace(root, path.sep), 'cwd/hello.js'));
 });
 
 test('rename filenames but not filepaths', async t => {
@@ -175,19 +179,14 @@ test('rename filenames using a function', async t => {
 	t.is(read(t.context.tmp, 'source/bar.js'), read(t.context.tmp, 'destination/subdir/source/prefix-bar.js'));
 });
 
-test('cp-file errors are not glob errors', async t => {
-	const error = await t.throwsAsync(cpy('license', t.context.EPERM), /EPERM/);
-	t.notRegex(error.message, /glob/);
-});
-
 test('cp-file errors are CpyErrors', async t => {
-	const error = await t.throwsAsync(cpy('license', t.context.EPERM), /EPERM/);
-	t.true(error instanceof CpyError);
+	const cpy = cpyMockedError('cp-file');
+	await t.throwsAsync(cpy('license', t.context.dir), {message: /cp-file/, instanceOf: CpyError});
 });
 
 test('glob errors are CpyErrors', async t => {
-	const error = await t.throwsAsync(cpy(t.context.EPERM + '/**', t.context.tmp), /EPERM/);
-	t.true(error instanceof CpyError);
+	const cpy = cpyMockedError('globby');
+	await t.throwsAsync(cpy(path.join(t.context.dir, '/**'), t.context.tmp), {message: /globby/, instanceOf: CpyError});
 });
 
 test('throws on non-existing file', async t => {
