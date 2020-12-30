@@ -5,28 +5,21 @@ import {ProgressEmitter, ProgressData} from '.';
 expectType<Promise<string[]> & ProgressEmitter>(
 	cpy(['source/*.png', '!source/goat.png'], 'destination')
 );
-// FIXME:
-// expectType<Promise<string[]> & ProgressEmitter>(
-// 	cpy('foo.js', 'destination', {rename: 'foobar'})
-// );
-// FIXME:
-// expectType<Promise<string[]> & ProgressEmitter>(
-// 	cpy('foo.js', 'destination', {rename: basename => `prefix-${basename}`})
-// );
+expectType<Promise<string[]> & ProgressEmitter>(
+	cpy('foo.js', 'destination', {rename: 'foobar'})
+);
+expectType<Promise<string[]> & ProgressEmitter>(
+	cpy('foo.js', 'destination', {rename: basename => `prefix-${basename}`})
+);
 expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {cwd: '/'})
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {parents: true})
+	cpy('foo.js', 'destination', {flat: true})
 );
-// FIXME:
-// expectType<Promise<string[]> & ProgressEmitter>(
-// 	cpy('foo.js', 'destination', {expandDirectories: true})
-// 	);
-// FIXME:
-// expectType<Promise<string[]> & ProgressEmitter>(
-// 	cpy('foo.js', 'destination', {overwrite: false})
-// );
+expectType<Promise<string[]> & ProgressEmitter>(
+	cpy('foo.js', 'destination', {overwrite: false})
+);
 expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {concurrency: 2})
 );

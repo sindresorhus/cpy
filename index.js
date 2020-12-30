@@ -6,7 +6,8 @@ const {
 	join,
 	relative,
 	sep,
-	isAbsolute
+	isAbsolute,
+	dirname
 } = require('path');
 const os = require('os');
 const pMap = require('p-map');
@@ -24,8 +25,18 @@ const {glob} = require('glob');
  * @property {boolean} flat
  * @property {string} cwd
  * @property {boolean} overwrite
+ * @property {string|Function} rename
  */
 
+/**
+ * @typedef {object} CopyStatus
+ * @property {number} written
+ * @property {number} percent
+ */
+
+ /**
+	* @type number
+	*/
 const defaultConcurrency = (os.cpus().length || 1) * 2;
 
 /**
@@ -34,7 +45,7 @@ const defaultConcurrency = (os.cpus().length || 1) * 2;
 const defaultOptions = {
 	ignoreJunk: true,
 	flat: false,
-	cwd: process.cwd()
+	cwd: process.cwd(),
 };
 
 class Entry {
@@ -88,6 +99,22 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 };
 
 /**
+ * @param {string} path
+ * @param {string|Function} rename
+ */
+const renameFile = (path, rename) => {
+	const filename = basename(path, extname(path))
+	const ext = extname(path)
+	const dir = dirname(path)
+	if (typeof rename === 'string') {
+		return join(dir, rename);
+	} else if (typeof rename === 'function') {
+		return join(dir, `${rename(filename)}${ext}`)
+	}
+	return path
+}
+
+/**
  * @param {string} source
  * @param {string} destination
  * @param {Options} options
@@ -97,8 +124,9 @@ const cpy = (
 	destination,
 	{concurrency = defaultConcurrency, ...options} = {}
 ) => {
+
 	/**
-	 * @type {Map<string, {written: number, percent: number}>}
+	 * @type {Map<string, CopyStatus>}
 	 */
 	const copyStatus = new Map();
 
@@ -209,11 +237,11 @@ const cpy = (
 		return pMap(
 			entries,
 			async entry => {
-				const to = preprocessDestinationPath({
+				const to = renameFile(preprocessDestinationPath({
 					entry,
 					destination,
 					options
-				});
+				}), options.rename);
 
 				try {
 					await cpFile(entry.path, to, options).on(
@@ -221,21 +249,10 @@ const cpy = (
 						fileProgressHandler
 					);
 				} catch (error) {
-					// If (/EISDIR/.test(error.message)) {
-					// 	try {
-					// 		await mkdirp(to);
-					// 	} catch (error) {
-					// 		throw new CpyError(
-					// 			`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`,
-					// 			error
-					// 		);
-					// 	}
-					// } else {
 					throw new CpyError(
 						`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`,
 						error
 					);
-					// }
 				}
 
 				return to;

@@ -1,4 +1,4 @@
-import {GlobbyOptions} from 'globby';
+import {IOptions as GlobOptions} from 'glob';
 import {Options as CpFileOptions} from 'cp-file';
 
 declare namespace cpy {
@@ -32,7 +32,7 @@ declare namespace cpy {
 		readonly extension: string;
 	}
 
-	interface Options extends Readonly<GlobbyOptions>, CpFileOptions {
+	interface Options extends Readonly<GlobOptions>, CpFileOptions {
 		/**
 		Working directory to find source files.
 
@@ -41,11 +41,11 @@ declare namespace cpy {
 		readonly cwd?: string;
 
 		/**
-		Preserve path structure.
+		Flatten directory tree.
 
 		@default false
 		*/
-		readonly parents?: boolean;
+		readonly flat?: boolean;
 
 		/**
 		Filename or function returning a filename used to rename every file in `source`.
@@ -61,7 +61,7 @@ declare namespace cpy {
 		})();
 		```
 		*/
-		// readonly rename?: string | ((basename: string) => string);
+		readonly rename?: string | ((basename: string) => string);
 
 		/**
 		Number of files being copied concurrently.

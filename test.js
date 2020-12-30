@@ -161,58 +161,56 @@ test('path structure', async t => {
 	);
 });
 
-// Test('rename filenames but not filepaths', async t => {
-// 	fs.mkdirSync(t.context.tmp);
-// 	fs.mkdirSync(path.join(t.context.tmp, 'source'));
-// 	fs.writeFileSync(
-// 		path.join(t.context.tmp, 'hello.js'),
-// 		'console.log("hello");'
-// 	);
-// 	fs.writeFileSync(
-// 		path.join(t.context.tmp, 'source/hello.js'),
-// 		'console.log("hello");'
-// 	);
+test('rename filenames but not filepaths', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'hello.js'),
+		'console.log("hello");'
+	);
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/hello.js'),
+		'console.log("hello");'
+	);
 
-// 	await cpy(['hello.js', 'source/hello.js'], 'destination/subdir', {
-// 		cwd: t.context.tmp,
-// 		parents: true,
-// 		rename: 'hi.js'
-// 	});
+	await cpy(['hello.js', 'source/hello.js'], 'destination/subdir', {
+		cwd: t.context.tmp,
+		rename: 'hi.js'
+	});
 
-// 	t.is(
-// 		read(t.context.tmp, 'hello.js'),
-// 		read(t.context.tmp, 'destination/subdir/hi.js')
-// 	);
-// 	t.is(
-// 		read(t.context.tmp, 'source/hello.js'),
-// 		read(t.context.tmp, 'destination/subdir/source/hi.js')
-// 	);
-// });
+	t.is(
+		read(t.context.tmp, 'hello.js'),
+		read(t.context.tmp, 'destination/subdir/hi.js')
+	);
+	t.is(
+		read(t.context.tmp, 'source/hello.js'),
+		read(t.context.tmp, 'destination/subdir/source/hi.js')
+	);
+});
 
-// test('rename filenames using a function', async t => {
-// 	fs.mkdirSync(t.context.tmp);
-// 	fs.mkdirSync(path.join(t.context.tmp, 'source'));
-// 	fs.writeFileSync(path.join(t.context.tmp, 'foo.js'), 'console.log("foo");');
-// 	fs.writeFileSync(
-// 		path.join(t.context.tmp, 'source/bar.js'),
-// 		'console.log("bar");'
-// 	);
+test('rename filenames using a function', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.writeFileSync(path.join(t.context.tmp, 'foo.js'), 'console.log("foo");');
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/bar.js'),
+		'console.log("bar");'
+	);
 
-// 	await cpy(['foo.js', 'source/bar.js'], 'destination/subdir', {
-// 		cwd: t.context.tmp,
-// 		parents: true,
-// 		rename: basename => `prefix-${basename}`
-// 	});
+	await cpy(['foo.js', 'source/bar.js'], 'destination/subdir', {
+		cwd: t.context.tmp,
+		rename: basename => `prefix-${basename}`
+	});
 
-// 	t.is(
-// 		read(t.context.tmp, 'foo.js'),
-// 		read(t.context.tmp, 'destination/subdir/prefix-foo.js')
-// 	);
-// 	t.is(
-// 		read(t.context.tmp, 'source/bar.js'),
-// 		read(t.context.tmp, 'destination/subdir/source/prefix-bar.js')
-// 	);
-// });
+	t.is(
+		read(t.context.tmp, 'foo.js'),
+		read(t.context.tmp, 'destination/subdir/prefix-foo.js')
+	);
+	t.is(
+		read(t.context.tmp, 'source/bar.js'),
+		read(t.context.tmp, 'destination/subdir/source/prefix-bar.js')
+	);
+});
 
 // INFO: mode passed to mkdirSync to create EPERM directory doesn't work on Windows
 if (process.platform !== 'win32') {
