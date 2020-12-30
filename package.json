@@ -14,8 +14,7 @@
 		"node": ">=8"
 	},
 	"scripts": {
-		"test": "xo && ava && tsd",
-		"test-simple": "ava"
+		"test": "xo && ava && tsd"
 	},
 	"prettier": {
 		"bracketSpacing": false,
