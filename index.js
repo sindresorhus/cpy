@@ -82,7 +82,11 @@ class Entry {
 const preprocessDestinationPath = ({entry, destination, options}) => {
 	if (entry.pattern.hasMagic()) {
 		if (options.flat) {
-			return join(destination, entry.name);
+			if (isAbsolute(destination)) {
+				return join(destination, entry.name);
+			}
+
+			return join(options.cwd, destination, entry.name);
 		}
 
 		return join(

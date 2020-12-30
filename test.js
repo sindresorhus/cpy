@@ -212,6 +212,38 @@ test('rename filenames using a function', async t => {
 	);
 });
 
+test('flatten directory tree', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.mkdirSync(path.join(t.context.tmp, 'source', 'nested'));
+	fs.writeFileSync(path.join(t.context.tmp, 'foo.js'), 'console.log("foo");');
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/bar.js'),
+		'console.log("bar");'
+	);
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/nested/baz.ts'),
+		'console.log("baz");'
+	);
+
+	await cpy('**/*.js', 'destination/subdir', {
+		cwd: t.context.tmp,
+		flat: true,
+	});
+
+	t.is(
+		read(t.context.tmp, 'foo.js'),
+		read(t.context.tmp, 'destination/subdir/foo.js')
+	);
+	t.is(
+		read(t.context.tmp, 'source/bar.js'),
+		read(t.context.tmp, 'destination/subdir/bar.js')
+	);
+	t.falsy(
+		fs.existsSync(path.join(t.context.tmp, 'destination/subdir/baz.ts'))
+	);
+});
+
 // INFO: mode passed to mkdirSync to create EPERM directory doesn't work on Windows
 if (process.platform !== 'win32') {
 	test('cp-file errors are not glob errors', async t => {
