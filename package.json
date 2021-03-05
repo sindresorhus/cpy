@@ -1,6 +1,6 @@
 {
 	"name": "cpy",
-	"version": "8.1.1",
+	"version": "8.1.2",
 	"description": "Copy files",
 	"license": "MIT",
 	"repository": "sindresorhus/cpy",
