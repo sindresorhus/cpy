@@ -1,6 +1,6 @@
 {
 	"name": "cpy",
-	"version": "8.1.2",
+	"version": "9.0.0",
 	"description": "Copy files",
 	"license": "MIT",
 	"repository": "sindresorhus/cpy",
@@ -11,7 +11,7 @@
 		"url": "sindresorhus.com"
 	},
 	"engines": {
-		"node": ">=8"
+		"node": ">=10"
 	},
 	"scripts": {
 		"test": "xo && ava && tsd"
@@ -45,7 +45,7 @@
 	"dependencies": {
 		"arrify": "^2.0.1",
 		"cp-file": "^7.0.0",
-		"globby": "^9.2.0",
+		"globby": "^11.0.3",
 		"has-glob": "^1.0.0",
 		"junk": "^3.1.0",
 		"nested-error-stacks": "^2.1.0",
