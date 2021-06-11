@@ -228,7 +228,7 @@ test('flatten directory tree', async t => {
 
 	await cpy('**/*.js', 'destination/subdir', {
 		cwd: t.context.tmp,
-		flat: true,
+		flat: true
 	});
 
 	t.is(
