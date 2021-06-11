@@ -51,11 +51,22 @@ const defaultOptions = {
 class Entry {
 	/**
 	 * @param {string} path
+	 * @param {string} relativePath
 	 * @param {GlobPattern} pattern
 	 */
-	constructor(path, pattern) {
+	constructor(path, relativePath, pattern) {
+		/**
+		 * @type {string}
+		 */
 		this.path = path.split('/').join(sep);
+
+		/**
+		 * @type {string}
+		 */
+		this.relativePath = relativePath.split('/').join(sep);
+
 		this.pattern = pattern;
+
 		Object.freeze(this);
 	}
 
@@ -189,7 +200,7 @@ const cpy = (
 
 			entries = [].concat(
 				entries,
-				matches.map(sourcePath => new Entry(sourcePath, pattern))
+				matches.map(sourcePath => new Entry(sourcePath, relative(options.cwd, sourcePath), pattern))
 			);
 		}
 

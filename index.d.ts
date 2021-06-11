@@ -11,6 +11,13 @@ declare namespace cpy {
 		readonly path: string;
 
 		/**
+		Relative path to the file from cwd.
+
+		@example 'dir/foo.js'
+		*/
+		readonly path: string;
+
+		/**
 		Filename with extension.
 
 		@example 'foo.js'
