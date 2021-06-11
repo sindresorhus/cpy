@@ -133,7 +133,7 @@ Copy files.
 
 @param source - Files to copy. If any of the files do not exist, an error will be thrown (does not apply to globs).
 @param destination - Destination directory.
-@param options - In addition to the options defined here, options are passed to [globby](https://github.com/sindresorhus/globby#options).
+@param options - In addition to the options defined here, options are passed to [glob](https://github.com/isaacs/node-glob).
 
 @example
 ```

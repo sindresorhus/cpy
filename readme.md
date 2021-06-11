@@ -6,7 +6,7 @@
 
 - Fast by using streams.
 - Resilient by using [graceful-fs](https://github.com/isaacs/node-graceful-fs).
-- User-friendly by accepting [globs](https://github.com/sindresorhus/globby#globbing-patterns) and creating non-existent destination directories.
+- User-friendly by accepting [globs](https://github.com/isaacs/node-glob#glob-primer) and creating non-existent destination directories.
 - User-friendly error messages.
 - Progress reporting.
 
@@ -51,7 +51,7 @@ Destination directory.
 
 Type: `object`
 
-Options are passed to [globby](https://github.com/sindresorhus/globby#options).
+Options are passed to [glob](https://github.com/isaacs/node-glob#options).
 
 In addition, you can specify the below options.
 
@@ -69,12 +69,23 @@ Default: `true`
 
 Overwrite existing files.
 
-##### parents
+##### flat
 
 Type: `boolean`\
 Default: `false`
 
-Preserve path structure.
+Flatten directory structure. All copied files will be put in the same directory.
+
+
+```js
+const cpy = require('cpy');
+
+(async () => {
+	await cpy('src/**/*.js', 'destination', {
+		flat: true
+	});
+})();
+```
 
 ##### rename
 
