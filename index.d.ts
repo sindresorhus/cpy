@@ -97,7 +97,7 @@ declare namespace cpy {
 
 		(async () => {
 			await cpy('foo', 'destination', {
-				filter: file => file.extension !== '.nocopy'
+				filter: file => file.extension !== 'nocopy'
 			});
 		})();
 		```

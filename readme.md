@@ -1,4 +1,4 @@
-# cpy [![Build Status](https://travis-ci.org/sindresorhus/cpy.svg?branch=master)](https://travis-ci.org/sindresorhus/cpy)
+# cpy
 
 > Copy files
 
@@ -148,7 +148,7 @@ const cpy = require('cpy');
 
 (async () => {
 	await cpy('foo', 'destination', {
-		filter: file => file.extension !== '.nocopy'
+		filter: file => file.extension !== 'nocopy'
 	});
 })();
 ```
