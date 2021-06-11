@@ -3,37 +3,40 @@ import fs from 'fs';
 import crypto from 'crypto';
 import rimraf from 'rimraf';
 import test from 'ava';
-import tempfile from 'tempfile';
+import tempy from 'tempy';
 import CpyError from './cpy-error';
+import proxyquire from 'proxyquire';
 import cpy from '.';
 
 const read = (...args) => fs.readFileSync(path.join(...args), 'utf8');
+const cpyMockedError = module => {
+	return proxyquire('.', {
+		[module]() {
+			throw new Error(`${module}:\tERROR`);
+		}
+	});
+};
 
 test.beforeEach(t => {
-	t.context.tmp = tempfile();
-	t.context.EPERM = tempfile('EPERM');
-	fs.mkdirSync(t.context.EPERM, 0);
+	t.context.tmp = tempy.file();
+	t.context.dir = tempy.directory();
 });
 
 test.afterEach(t => {
 	rimraf.sync(t.context.tmp);
-	rimraf.sync(t.context.EPERM);
+	rimraf.sync(t.context.dir);
 });
 
 test('reject Errors on missing `source`', async t => {
-	const error1 = await t.throwsAsync(cpy, /`source`/);
-	t.true(error1 instanceof CpyError);
+	await t.throwsAsync(cpy, {message: /`source`/, instanceOf: CpyError});
 
-	const error2 = await t.throwsAsync(cpy(null, 'destination'), /`source`/);
-	t.true(error2 instanceof CpyError);
+	await t.throwsAsync(cpy(null, 'destination'), {message: /`source`/, instanceOf: CpyError});
 
-	const error3 = await t.throwsAsync(cpy([], 'destination'), /`source`/);
-	t.true(error3 instanceof CpyError);
+	await t.throwsAsync(cpy([], 'destination'), {message: /`source`/, instanceOf: CpyError});
 });
 
 test('reject Errors on missing `destination`', async t => {
-	const error = await t.throwsAsync(cpy('TARGET'), /`destination`/);
-	t.true(error instanceof CpyError);
+	await t.throwsAsync(cpy('TARGET'), {message: /`destination`/, instanceOf: CpyError});
 });
 
 test('copy single file', async t => {
@@ -252,16 +255,13 @@ if (process.platform !== 'win32') {
 	});
 
 	test('cp-file errors are CpyErrors', async t => {
-		const error = await t.throwsAsync(cpy('license', t.context.EPERM), /EPERM/);
-		t.true(error instanceof CpyError);
+		const cpy = cpyMockedError('cp-file');
+		await t.throwsAsync(cpy('license', t.context.dir), {message: /cp-file/, instanceOf: CpyError});
 	});
 
 	test('glob errors are CpyErrors', async t => {
-		const error = await t.throwsAsync(
-			cpy(t.context.EPERM + '/**', t.context.tmp),
-			/EPERM/
-		);
-		t.true(error instanceof CpyError);
+		const cpy = cpyMockedError('globby');
+		await t.throwsAsync(cpy(path.join(t.context.dir, '/**'), t.context.tmp), {message: /globby/, instanceOf: CpyError});
 	});
 }
 

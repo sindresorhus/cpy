@@ -15,7 +15,7 @@ declare namespace cpy {
 
 		@example 'dir/foo.js'
 		*/
-		readonly path: string;
+		readonly relativePath: string;
 
 		/**
 		Filename with extension.
