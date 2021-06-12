@@ -248,23 +248,10 @@ test('flatten directory tree', async t => {
 	);
 });
 
-// INFO: mode passed to mkdirSync to create EPERM directory doesn't work on Windows
-if (process.platform !== 'win32') {
-	test('cp-file errors are not glob errors', async t => {
-		const error = await t.throwsAsync(cpy('license', t.context.EPERM), /EPERM/);
-		t.notRegex(error.message, /glob/);
-	});
-
-	test('cp-file errors are CpyErrors', async t => {
-		const cpy = cpyMockedError('cp-file');
-		await t.throwsAsync(cpy('license', t.context.dir), {message: /cp-file/, instanceOf: CpyError});
-	});
-
-	test('glob errors are CpyErrors', async t => {
-		const cpy = cpyMockedError('globby');
-		await t.throwsAsync(cpy(path.join(t.context.dir, '/**'), t.context.tmp), {message: /globby/, instanceOf: CpyError});
-	});
-}
+test('cp-file errors are CpyErrors', async t => {
+	const cpy = cpyMockedError('cp-file');
+	await t.throwsAsync(cpy('license', t.context.dir), {message: /cp-file/, instanceOf: CpyError});
+});
 
 test('throws on non-existing file', async t => {
 	fs.mkdirSync(t.context.tmp);
