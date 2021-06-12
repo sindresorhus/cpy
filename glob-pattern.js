@@ -9,12 +9,14 @@ class GlobPattern {
 	 * @param {string} pattern
 	 * @param {string} destination
 	 * @param {import('.').Options} options
+	 * @param {GlobSync} globSyncInstance
 	 */
-	constructor(pattern, destination, options) {
+	constructor(pattern, destination, options, globSyncInstance) {
 		this.path = pattern;
 		this.originalPath = pattern;
 		this.destination = destination;
 		this.options = options;
+		this.globSyncInstance = globSyncInstance;
 
 		if (
 			!glob.hasMagic(pattern) &&
@@ -46,12 +48,12 @@ class GlobPattern {
 	}
 
 	getMatches() {
-		let matches = glob.sync(this.path, {
+		let matches = new glob.GlobSync(this.path, this.globSyncInstance || {
 			...this.options,
 			dot: true,
 			absolute: true,
 			nodir: true
-		});
+		}).found;
 
 		if (this.options.ignoreJunk) {
 			matches = matches.filter(file => junk.not(basename(file)));
