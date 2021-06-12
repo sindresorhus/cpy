@@ -1,12 +1,13 @@
-import path, {sep} from 'path';
-import fs from 'fs';
-import crypto from 'crypto';
-import rimraf from 'rimraf';
-import test from 'ava';
-import tempy from 'tempy';
-import CpyError from './cpy-error';
-import proxyquire from 'proxyquire';
-import cpy from '.';
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const rimraf = require('rimraf');
+const test = require('ava');
+const tempy = require('tempy');
+const CpyError = require('./cpy-error');
+const proxyquire = require('proxyquire');
+const cpy = require('.');
+const {sep} = path;
 
 const read = (...args) => fs.readFileSync(path.join(...args), 'utf8');
 const cpyMockedError = module => {
