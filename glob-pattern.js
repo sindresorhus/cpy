@@ -42,7 +42,7 @@ class GlobPattern {
 	}
 
 	hasMagic() {
-		return glob.hasMagic(this.originalPath);
+		return glob.hasMagic(this.path);
 	}
 
 	getMatches() {
