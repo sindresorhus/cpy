@@ -173,27 +173,7 @@ const cpy = (
 			throw new CpyError('`source` and `destination` required');
 		}
 
-		patterns = patterns.reduce(
-			(obj, pattern) => {
-				const instance = new GlobPattern(
-					pattern,
-					destination,
-					/**
-					 * Passing previous instance of Glob will reduce some stat and readdir calls.
-					 * @see https://github.com/isaacs/node-glob#options
-					 */
-					obj.instance || options
-				);
-				return {
-					rootInstance: obj.rootInstance || instance,
-					instances: [...obj.instances, instance]
-				};
-			},
-			{
-				rootInstance: undefined,
-				instances: []
-			}
-		).instances;
+		patterns = patterns.map(pattern => new GlobPattern(pattern, destination, options));
 
 		for (const pattern of patterns) {
 			/**

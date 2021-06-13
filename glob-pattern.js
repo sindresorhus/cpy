@@ -31,7 +31,7 @@ class GlobPattern {
 
 	get normalizedPath() {
 		const segments = this.originalPath.split('/');
-		const magicIndex = segments.findIndex(glob.hasMagic);
+		const magicIndex = segments.findIndex(item => item ? glob.hasMagic(item) : false);
 		const normalized = segments.slice(0, magicIndex).join('/');
 
 		if (normalized) {
@@ -42,7 +42,7 @@ class GlobPattern {
 	}
 
 	hasMagic() {
-		return glob.hasMagic(this.path);
+		return glob.hasMagic(this.options.flat ? this.path : this.originalPath);
 	}
 
 	getMatches() {
