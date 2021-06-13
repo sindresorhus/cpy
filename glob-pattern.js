@@ -1,5 +1,5 @@
 'use strict';
-const glob = require('glob');
+const glob = require('globby');
 const junk = require('junk');
 const {join, basename, isAbsolute} = require('path');
 const {existsSync, lstatSync} = require('fs');
@@ -9,21 +9,19 @@ class GlobPattern {
 	 * @param {string} pattern
 	 * @param {string} destination
 	 * @param {import('.').Options} options
-	 * @param {GlobSync} globSyncInstance
 	 */
-	constructor(pattern, destination, options, globSyncInstance) {
+	constructor(pattern, destination, options) {
 		this.path = pattern;
 		this.originalPath = pattern;
 		this.destination = destination;
 		this.options = options;
-		this.globSyncInstance = globSyncInstance;
 
 		if (
 			!glob.hasMagic(pattern) &&
 			existsSync(pattern) &&
 			lstatSync(pattern).isDirectory()
 		) {
-			this.path = join(pattern, '**');
+			this.path = [pattern, '**'].join('/');
 		}
 	}
 
@@ -48,12 +46,12 @@ class GlobPattern {
 	}
 
 	getMatches() {
-		let matches = new glob.GlobSync(this.path, this.globSyncInstance || {
+		let matches = glob.sync(this.path, {
 			...this.options,
 			dot: true,
 			absolute: true,
-			nodir: true
-		}).found;
+			onlyFiles: true
+		});
 
 		if (this.options.ignoreJunk) {
 			matches = matches.filter(file => junk.not(basename(file)));

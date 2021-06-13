@@ -16,7 +16,7 @@ const cpFile = require('cp-file');
 const pFilter = require('p-filter');
 const CpyError = require('./cpy-error');
 const GlobPattern = require('./glob-pattern');
-const {glob} = require('glob');
+const glob = require('globby');
 
 /**
  * @typedef {object} Options

@@ -49,7 +49,7 @@
 	"dependencies": {
 		"arrify": "^2.0.1",
 		"cp-file": "^7.0.0",
-		"glob": "^7.1.6",
+		"globby": "^11.0.3",
 		"junk": "^3.1.0",
 		"mkdirp": "^1.0.4",
 		"nested-error-stacks": "^2.1.0",
