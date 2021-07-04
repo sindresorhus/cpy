@@ -1,14 +1,6 @@
 'use strict';
 const EventEmitter = require('events');
-const {
-	basename,
-	extname,
-	join,
-	relative,
-	sep,
-	isAbsolute,
-	dirname
-} = require('path');
+const path = require('path');
 const os = require('os');
 const pMap = require('p-map');
 const arrify = require('arrify');
@@ -18,34 +10,15 @@ const CpyError = require('./cpy-error');
 const GlobPattern = require('./glob-pattern');
 const glob = require('globby');
 
-/**
- * @typedef {object} Options
- * @property {number} concurrency
- * @property {boolean} ignoreJunk
- * @property {boolean} flat
- * @property {string} cwd
- * @property {boolean} overwrite
- * @property {string|Function} rename
- */
-
-/**
- * @typedef {object} CopyStatus
- * @property {number} written
- * @property {number} percent
- */
-
-/**
- * @type number
- */
 const defaultConcurrency = (os.cpus().length || 1) * 2;
 
 /**
- * @type {Options}
+ * @type {import('./index').Options}
  */
 const defaultOptions = {
 	ignoreJunk: true,
 	flat: false,
-	cwd: process.cwd()
+	cwd: process.cwd(),
 };
 
 class Entry {
@@ -58,12 +31,12 @@ class Entry {
 		/**
 		 * @type {string}
 		 */
-		this.path = path.split('/').join(sep);
+		this.path = path.split('/').join(path.sep);
 
 		/**
 		 * @type {string}
 		 */
-		this.relativePath = relativePath.split('/').join(sep);
+		this.relativePath = relativePath.split('/').join(path.sep);
 
 		this.pattern = pattern;
 
@@ -71,46 +44,46 @@ class Entry {
 	}
 
 	get name() {
-		return basename(this.path);
+		return path.basename(this.path);
 	}
 
 	get nameWithoutExtension() {
-		return basename(this.path, extname(this.path));
+		return path.basename(this.path, path.extname(this.path));
 	}
 
 	get extension() {
-		return extname(this.path).slice(1);
+		return path.extname(this.path).slice(1);
 	}
 }
 
 /**
  * @param {object} props
  * @param {Entry} props.entry
- * @param {Options} props.options
+ * @param {import('./index').Options}
  * @param {string} props.destination
  * @returns {string}
  */
 const preprocessDestinationPath = ({entry, destination, options}) => {
 	if (entry.pattern.hasMagic()) {
 		if (options.flat) {
-			if (isAbsolute(destination)) {
-				return join(destination, entry.name);
+			if (path.isAbsolute(destination)) {
+				return path.join(destination, entry.name);
 			}
 
-			return join(options.cwd, destination, entry.name);
+			return path.join(options.cwd, destination, entry.name);
 		}
 
-		return join(
+		return path.join(
 			destination,
-			relative(entry.pattern.normalizedPath, entry.path)
+			path.relative(entry.pattern.normalizedPath, entry.path)
 		);
 	}
 
-	if (isAbsolute(destination)) {
-		return join(destination, entry.name);
+	if (path.isAbsolute(destination)) {
+		return path.join(destination, entry.name);
 	}
 
-	return join(options.cwd, destination, relative(options.cwd, entry.path));
+	return path.join(options.cwd, destination, path.relative(options.cwd, entry.path));
 };
 
 /**
@@ -118,15 +91,15 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
  * @param {string|Function} rename
  */
 const renameFile = (path, rename) => {
-	const filename = basename(path, extname(path));
-	const ext = extname(path);
-	const dir = dirname(path);
+	const filename = path.basename(path, path.extname(path));
+	const ext = path.extname(path);
+	const dir = path.dirname(path);
 	if (typeof rename === 'string') {
-		return join(dir, rename);
+		return path.join(dir, rename);
 	}
 
 	if (typeof rename === 'function') {
-		return join(dir, `${rename(filename)}${ext}`);
+		return path.join(dir, `${rename(filename)}${ext}`);
 	}
 
 	return path;
@@ -135,7 +108,7 @@ const renameFile = (path, rename) => {
 /**
  * @param {string|string[]} source
  * @param {string} destination
- * @param {Options} options
+ * @param {import('./index').Options} options
  */
 const cpy = (
 	source,
@@ -143,7 +116,7 @@ const cpy = (
 	{concurrency = defaultConcurrency, ...options} = {}
 ) => {
 	/**
-	 * @type {Map<string, CopyStatus>}
+	 * @type {Map<string, import('./index').CopyStatus>}
 	 */
 	const copyStatus = new Map();
 
@@ -198,7 +171,7 @@ const cpy = (
 
 			entries = [].concat(
 				entries,
-				matches.map(sourcePath => new Entry(sourcePath, relative(options.cwd, sourcePath), pattern))
+				matches.map(sourcePath => new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern))
 			);
 		}
 

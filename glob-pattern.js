@@ -1,8 +1,8 @@
 'use strict';
 const glob = require('globby');
 const junk = require('junk');
-const {join, basename, isAbsolute} = require('path');
-const {existsSync, lstatSync} = require('fs');
+const path = require('path');
+const fs = require('fs');
 
 class GlobPattern {
 	/**
@@ -18,15 +18,15 @@ class GlobPattern {
 
 		if (
 			!glob.hasMagic(pattern) &&
-			existsSync(pattern) &&
-			lstatSync(pattern).isDirectory()
+			fs.existsSync(pattern) &&
+			fs.lstatSync(pattern).isDirectory()
 		) {
 			this.path = [pattern, '**'].join('/');
 		}
 	}
 
 	get name() {
-		return basename(this.originalPath);
+		return path.basename(this.originalPath);
 	}
 
 	get normalizedPath() {
@@ -35,7 +35,7 @@ class GlobPattern {
 		const normalized = segments.slice(0, magicIndex).join('/');
 
 		if (normalized) {
-			return isAbsolute(normalized) ? normalized : join(this.options.cwd, normalized);
+			return path.isAbsolute(normalized) ? normalized : path.join(this.options.cwd, normalized);
 		}
 
 		return this.destination;
@@ -54,7 +54,7 @@ class GlobPattern {
 		});
 
 		if (this.options.ignoreJunk) {
-			matches = matches.filter(file => junk.not(basename(file)));
+			matches = matches.filter(file => junk.not(path.basename(file)));
 		}
 
 		return matches;

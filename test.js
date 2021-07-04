@@ -7,7 +7,6 @@ const tempy = require('tempy');
 const CpyError = require('./cpy-error');
 const proxyquire = require('proxyquire');
 const cpy = require('.');
-const {sep} = path;
 
 const read = (...args) => fs.readFileSync(path.join(...args), 'utf8');
 const cpyMockedError = module => {
@@ -88,19 +87,19 @@ test('copy array of files with filter', async t => {
 test('copy array of files with async filter', async t => {
 	await cpy(['license', 'package.json'], t.context.tmp, {
 		filter: async file => {
-			if (file.path.endsWith(`${sep}license`)) {
+			if (file.path.endsWith(`${path.sep}license`)) {
 				t.is(file.path, path.join(process.cwd(), 'license'));
 				t.is(file.name, 'license');
 				t.is(file.nameWithoutExtension, 'license');
 				t.is(file.extension, '');
-			} else if (file.path.endsWith(`${sep}package.json`)) {
+			} else if (file.path.endsWith(`${path.sep}package.json`)) {
 				t.is(file.path, path.join(process.cwd(), 'package.json'));
 				t.is(file.name, 'package.json');
 				t.is(file.nameWithoutExtension, 'package');
 				t.is(file.extension, 'json');
 			}
 
-			return !file.path.endsWith(`${sep}license`);
+			return !file.path.endsWith(`${path.sep}license`);
 		}
 	});
 
