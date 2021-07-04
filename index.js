@@ -18,7 +18,7 @@ const defaultConcurrency = (os.cpus().length || 1) * 2;
 const defaultOptions = {
 	ignoreJunk: true,
 	flat: false,
-	cwd: process.cwd(),
+	cwd: process.cwd()
 };
 
 class Entry {
