@@ -23,15 +23,15 @@ const defaultOptions = {
 
 class Entry {
 	/**
-	 * @param {string} path
+	 * @param {string} source
 	 * @param {string} relativePath
 	 * @param {GlobPattern} pattern
 	 */
-	constructor(path, relativePath, pattern) {
+	constructor(source, relativePath, pattern) {
 		/**
 		 * @type {string}
 		 */
-		this.path = path.split('/').join(path.sep);
+		this.path = source.split('/').join(path.sep);
 
 		/**
 		 * @type {string}
@@ -87,13 +87,13 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 };
 
 /**
- * @param {string} path
+ * @param {string} source
  * @param {string|Function} rename
  */
-const renameFile = (path, rename) => {
-	const filename = path.basename(path, path.extname(path));
-	const ext = path.extname(path);
-	const dir = path.dirname(path);
+const renameFile = (source, rename) => {
+	const filename = path.basename(source, path.extname(source));
+	const ext = path.extname(source);
+	const dir = path.dirname(source);
 	if (typeof rename === 'string') {
 		return path.join(dir, rename);
 	}
@@ -102,7 +102,7 @@ const renameFile = (path, rename) => {
 		return path.join(dir, `${rename(filename)}${ext}`);
 	}
 
-	return path;
+	return source;
 };
 
 /**
