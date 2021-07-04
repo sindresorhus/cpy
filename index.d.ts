@@ -1,4 +1,4 @@
-import {IOptions as GlobOptions} from 'glob';
+import {GlobbyOptions as GlobOptions} from 'globby';
 import {Options as CpFileOptions} from 'cp-file';
 
 declare namespace cpy {
