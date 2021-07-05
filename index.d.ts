@@ -177,7 +177,7 @@ declare namespace cpy {
 	```
 */
 declare function cpy(
-	source: string | ReadonlyArray<string>,
+	source: string | readonly string[],
 	destination: string,
 	options?: cpy.Options
 ): Promise<string[]> & cpy.ProgressEmitter;

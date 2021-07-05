@@ -49,18 +49,18 @@
 	"dependencies": {
 		"arrify": "^2.0.1",
 		"cp-file": "^7.0.0",
-		"globby": "^11.0.3",
+		"globby": "^11.0.4",
 		"junk": "^3.1.0",
 		"nested-error-stacks": "^2.1.0",
 		"p-filter": "^2.1.0",
 		"p-map": "^3.0.0"
 	},
 	"devDependencies": {
-		"ava": "^3.12.1",
+		"ava": "^3.15.0",
 		"proxyquire": "^2.1.3",
 		"rimraf": "^3.0.0",
-		"tempy": "^0.6.0",
-		"tsd": "^0.11.0",
-		"xo": "^0.25.3"
+		"tempy": "^1.0.1",
+		"tsd": "^0.17.0",
+		"xo": "^0.38.2"
 	}
 }

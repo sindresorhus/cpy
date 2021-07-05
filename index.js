@@ -6,11 +6,11 @@ const pMap = require('p-map');
 const arrify = require('arrify');
 const cpFile = require('cp-file');
 const pFilter = require('p-filter');
-const CpyError = require('./cpy-error');
-const GlobPattern = require('./glob-pattern');
+const CpyError = require('./cpy-error.js');
+const GlobPattern = require('./glob-pattern.js');
 const glob = require('globby');
 
-const defaultConcurrency = (os.cpus().length || 1) * 2;
+const defaultConcurrency = (os.cpus().length > 0 ? os.cpus().length : 1) * 2;
 
 /**
  * @type {import('./index').Options}
@@ -140,7 +140,7 @@ const cpy = (
 		/**
 		 * @type {GlobPattern[]}
 		 */
-		let patterns = arrify(source).map(str => str.replace(/\\/g, '/'));
+		let patterns = arrify(source).map(string => string.replace(/\\/g, '/'));
 
 		if (patterns.length === 0 || !destination) {
 			throw new CpyError('`source` and `destination` required');
@@ -169,10 +169,10 @@ const cpy = (
 				);
 			}
 
-			entries = [].concat(
-				entries,
-				matches.map(sourcePath => new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern))
-			);
+			entries = [
+				...entries,
+				...matches.map(sourcePath => new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern))
+			];
 		}
 
 		if (options.filter !== undefined) {
