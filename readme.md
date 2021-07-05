@@ -116,6 +116,9 @@ const cpy = require('cpy');
 	await cpy('foo.js', 'destination', {
 		rename: basename => `prefix-${basename}`
 	});
+	await cpy('foo.js', 'destination', {
+		rename: 'new-name'
+	});
 })();
 ```
 
