@@ -6,11 +6,11 @@ const pMap = require('p-map');
 const arrify = require('arrify');
 const cpFile = require('cp-file');
 const pFilter = require('p-filter');
-const CpyError = require('./cpy-error.js');
-const GlobPattern = require('./glob-pattern.js');
+const CpyError = require('./cpy-error');
+const GlobPattern = require('./glob-pattern');
 const glob = require('globby');
 
-const defaultConcurrency = (os.cpus().length > 0 ? os.cpus().length : 1) * 2;
+const defaultConcurrency = (os.cpus().length || 1) * 2;
 
 /**
  * @type {import('./index').Options}

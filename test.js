@@ -5,7 +5,7 @@ const rimraf = require('rimraf');
 const test = require('ava');
 const tempy = require('tempy');
 const proxyquire = require('proxyquire');
-const CpyError = require('./cpy-error.js');
+const CpyError = require('./cpy-error');
 const cpy = require('.');
 
 const read = (...args) => fs.readFileSync(path.join(...args), 'utf8');
