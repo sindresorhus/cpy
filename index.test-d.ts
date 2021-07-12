@@ -15,10 +15,7 @@ expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {cwd: '/'})
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {parents: true})
-);
-expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {expandDirectories: true})
+	cpy('foo.js', 'destination', {flat: true})
 );
 expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {overwrite: false})
@@ -28,10 +25,21 @@ expectType<Promise<string[]> & ProgressEmitter>(
 );
 
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {filter: (file: cpy.SourceFile) => true})
+	cpy('foo.js', 'destination', {
+		filter: file => {
+			expectType<cpy.Entry>(file);
+
+			expectType<string>(file.path);
+			expectType<string>(file.relativePath);
+			expectType<string>(file.name);
+			expectType<string>(file.nameWithoutExtension);
+			expectType<string>(file.extension);
+			return true;
+		}
+	})
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {filter: async (file: cpy.SourceFile) => true})
+	cpy('foo.js', 'destination', {filter: async (file: cpy.Entry) => true})
 );
 
 expectType<Promise<string[]>>(

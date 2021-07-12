@@ -53,28 +53,30 @@ test('copy array of files', async t => {
 });
 
 test('throws on invalid concurrency value', async t => {
-	await t.throwsAsync(cpy(['license', 'package.json'], t.context.tmp, {concurrency: -2}));
-	await t.throwsAsync(cpy(['license', 'package.json'], t.context.tmp, {concurrency: 'foo'}));
+	await t.throwsAsync(
+		cpy(['license', 'package.json'], t.context.tmp, {concurrency: -2})
+	);
+	await t.throwsAsync(
+		cpy(['license', 'package.json'], t.context.tmp, {concurrency: 'foo'})
+	);
 });
 
 test('copy array of files with filter', async t => {
 	await cpy(['license', 'package.json'], t.context.tmp, {
 		filter: file => {
-			if (file.path.endsWith(`${path.sep}license`)) {
+			if (file.path.endsWith('license')) {
 				t.is(file.path, path.join(process.cwd(), 'license'));
-				t.is(file.relativePath, 'license');
 				t.is(file.name, 'license');
 				t.is(file.nameWithoutExtension, 'license');
 				t.is(file.extension, '');
-			} else if (file.path.endsWith(`${path.sep}package.json`)) {
+			} else if (file.path.endsWith('package.json')) {
 				t.is(file.path, path.join(process.cwd(), 'package.json'));
-				t.is(file.relativePath, 'package.json');
 				t.is(file.name, 'package.json');
 				t.is(file.nameWithoutExtension, 'package');
 				t.is(file.extension, 'json');
 			}
 
-			return !file.path.endsWith(`${path.sep}license`);
+			return !file.path.endsWith('license');
 		}
 	});
 
@@ -87,13 +89,11 @@ test('copy array of files with async filter', async t => {
 		filter: async file => {
 			if (file.path.endsWith(`${path.sep}license`)) {
 				t.is(file.path, path.join(process.cwd(), 'license'));
-				t.is(file.relativePath, 'license');
 				t.is(file.name, 'license');
 				t.is(file.nameWithoutExtension, 'license');
 				t.is(file.extension, '');
 			} else if (file.path.endsWith(`${path.sep}package.json`)) {
 				t.is(file.path, path.join(process.cwd(), 'package.json'));
-				t.is(file.relativePath, 'package.json');
 				t.is(file.name, 'package.json');
 				t.is(file.nameWithoutExtension, 'package');
 				t.is(file.extension, 'json');
@@ -110,11 +110,19 @@ test('copy array of files with async filter', async t => {
 test('cwd', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
-	fs.writeFileSync(path.join(t.context.tmp, 'cwd/hello.js'), 'console.log("hello");');
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'cwd/hello.js'),
+		'console.log("hello");'
+	);
 
-	await cpy(['hello.js'], 'destination', {cwd: path.join(t.context.tmp, 'cwd')});
+	await cpy(['hello.js'], 'destination', {
+		cwd: path.join(t.context.tmp, 'cwd')
+	});
 
-	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, 'cwd/destination/hello.js'));
+	t.is(
+		read(t.context.tmp, 'cwd/hello.js'),
+		read(t.context.tmp, 'cwd/destination/hello.js')
+	);
 });
 
 test('do not overwrite', async t => {
@@ -129,7 +137,10 @@ test('do not overwrite', async t => {
 test('do not keep path structure', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
-	fs.writeFileSync(path.join(t.context.tmp, 'cwd/hello.js'), 'console.log("hello");');
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'cwd/hello.js'),
+		'console.log("hello");'
+	);
 
 	await cpy([path.join(t.context.tmp, 'cwd/hello.js')], t.context.tmp);
 
@@ -139,54 +150,106 @@ test('do not keep path structure', async t => {
 test('path structure', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
-	fs.writeFileSync(path.join(t.context.tmp, 'cwd/hello.js'), 'console.log("hello");');
+	fs.mkdirSync(path.join(t.context.tmp, 'out'));
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'cwd/hello.js'),
+		'console.log("hello");'
+	);
 
-	await cpy([path.join(t.context.tmp, 'cwd/hello.js')], t.context.tmp, {parents: true});
+	await cpy([path.join(t.context.tmp, '**')], path.join(t.context.tmp, 'out'));
 
-	const {root} = path.parse(t.context.tmp);
-	t.is(read(t.context.tmp, 'cwd/hello.js'), read(t.context.tmp, t.context.tmp.replace(root, path.sep), 'cwd/hello.js'));
+	t.is(
+		read(t.context.tmp, 'cwd/hello.js'),
+		read(t.context.tmp, 'out', 'cwd/hello.js')
+	);
 });
 
 test('rename filenames but not filepaths', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'source'));
-	fs.writeFileSync(path.join(t.context.tmp, 'hello.js'), 'console.log("hello");');
-	fs.writeFileSync(path.join(t.context.tmp, 'source/hello.js'), 'console.log("hello");');
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'hello.js'),
+		'console.log("hello");'
+	);
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/hello.js'),
+		'console.log("hello");'
+	);
 
 	await cpy(['hello.js', 'source/hello.js'], 'destination/subdir', {
 		cwd: t.context.tmp,
-		parents: true,
 		rename: 'hi.js'
 	});
 
-	t.is(read(t.context.tmp, 'hello.js'), read(t.context.tmp, 'destination/subdir/hi.js'));
-	t.is(read(t.context.tmp, 'source/hello.js'), read(t.context.tmp, 'destination/subdir/source/hi.js'));
+	t.is(
+		read(t.context.tmp, 'hello.js'),
+		read(t.context.tmp, 'destination/subdir/hi.js')
+	);
+	t.is(
+		read(t.context.tmp, 'source/hello.js'),
+		read(t.context.tmp, 'destination/subdir/source/hi.js')
+	);
 });
 
 test('rename filenames using a function', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'source'));
 	fs.writeFileSync(path.join(t.context.tmp, 'foo.js'), 'console.log("foo");');
-	fs.writeFileSync(path.join(t.context.tmp, 'source/bar.js'), 'console.log("bar");');
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/bar.js'),
+		'console.log("bar");'
+	);
 
 	await cpy(['foo.js', 'source/bar.js'], 'destination/subdir', {
 		cwd: t.context.tmp,
-		parents: true,
 		rename: basename => `prefix-${basename}`
 	});
 
-	t.is(read(t.context.tmp, 'foo.js'), read(t.context.tmp, 'destination/subdir/prefix-foo.js'));
-	t.is(read(t.context.tmp, 'source/bar.js'), read(t.context.tmp, 'destination/subdir/source/prefix-bar.js'));
+	t.is(
+		read(t.context.tmp, 'foo.js'),
+		read(t.context.tmp, 'destination/subdir/prefix-foo.js')
+	);
+	t.is(
+		read(t.context.tmp, 'source/bar.js'),
+		read(t.context.tmp, 'destination/subdir/source/prefix-bar.js')
+	);
+});
+
+test('flatten directory tree', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.mkdirSync(path.join(t.context.tmp, 'source', 'nested'));
+	fs.writeFileSync(path.join(t.context.tmp, 'foo.js'), 'console.log("foo");');
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/bar.js'),
+		'console.log("bar");'
+	);
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/nested/baz.ts'),
+		'console.log("baz");'
+	);
+
+	await cpy('**/*.js', 'destination/subdir', {
+		cwd: t.context.tmp,
+		flat: true
+	});
+
+	t.is(
+		read(t.context.tmp, 'foo.js'),
+		read(t.context.tmp, 'destination/subdir/foo.js')
+	);
+	t.is(
+		read(t.context.tmp, 'source/bar.js'),
+		read(t.context.tmp, 'destination/subdir/bar.js')
+	);
+	t.falsy(
+		fs.existsSync(path.join(t.context.tmp, 'destination/subdir/baz.ts'))
+	);
 });
 
 test('cp-file errors are CpyErrors', async t => {
 	const cpy = cpyMockedError('cp-file');
 	await t.throwsAsync(cpy('license', t.context.dir), {message: /cp-file/, instanceOf: CpyError});
-});
-
-test('glob errors are CpyErrors', async t => {
-	const cpy = cpyMockedError('globby');
-	await t.throwsAsync(cpy(path.join(t.context.dir, '/**'), t.context.tmp), {message: /globby/, instanceOf: CpyError});
 });
 
 test('throws on non-existing file', async t => {
@@ -219,10 +282,12 @@ test('junk files are ignored', async t => {
 
 	let report;
 
-	await cpy('*', t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd'), ignoreJunk: true})
-		.on('progress', event => {
-			report = event;
-		});
+	await cpy('*', t.context.tmp, {
+		cwd: path.join(t.context.tmp, 'cwd'),
+		ignoreJunk: true
+	}).on('progress', event => {
+		report = event;
+	});
 
 	t.not(report, undefined);
 	t.is(report.totalFiles, 1);
@@ -239,10 +304,12 @@ test('junk files are copied', async t => {
 
 	let report;
 
-	await cpy('*', t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd'), ignoreJunk: false})
-		.on('progress', event => {
-			report = event;
-		});
+	await cpy('*', t.context.tmp, {
+		cwd: path.join(t.context.tmp, 'cwd'),
+		ignoreJunk: false
+	}).on('progress', event => {
+		report = event;
+	});
 
 	t.not(report, undefined);
 	t.is(report.totalFiles, 2);
@@ -259,10 +326,12 @@ test('nested junk files are ignored', async t => {
 
 	let report;
 
-	await cpy(['cwd/*'], t.context.tmp, {cwd: t.context.tmp, ignoreJunk: true})
-		.on('progress', event => {
-			report = event;
-		});
+	await cpy(['cwd/*'], t.context.tmp, {
+		cwd: t.context.tmp,
+		ignoreJunk: true
+	}).on('progress', event => {
+		report = event;
+	});
 
 	t.not(report, undefined);
 	t.is(report.totalFiles, 1);
@@ -278,10 +347,11 @@ test('reports copy progress of single file', async t => {
 
 	let report;
 
-	await cpy(['foo'], t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')})
-		.on('progress', event => {
-			report = event;
-		});
+	await cpy(['foo'], t.context.tmp, {
+		cwd: path.join(t.context.tmp, 'cwd')
+	}).on('progress', event => {
+		report = event;
+	});
 
 	t.not(report, undefined);
 	t.is(report.totalFiles, 1);
@@ -298,10 +368,11 @@ test('reports copy progress of multiple files', async t => {
 
 	let report;
 
-	await cpy(['foo', 'bar'], t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')})
-		.on('progress', event => {
-			report = event;
-		});
+	await cpy(['foo', 'bar'], t.context.tmp, {
+		cwd: path.join(t.context.tmp, 'cwd')
+	}).on('progress', event => {
+		report = event;
+	});
 
 	t.not(report, undefined);
 	t.is(report.totalFiles, 2);
@@ -321,11 +392,12 @@ test('reports correct completedSize', async t => {
 	let report;
 	let chunkCount = 0;
 
-	await cpy(['fatfile'], t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')})
-		.on('progress', event => {
-			chunkCount++;
-			report = event;
-		});
+	await cpy(['fatfile'], t.context.tmp, {
+		cwd: path.join(t.context.tmp, 'cwd')
+	}).on('progress', event => {
+		chunkCount++;
+		report = event;
+	});
 
 	t.not(report, undefined);
 	t.is(report.totalFiles, 1);
@@ -347,7 +419,9 @@ test('returns destination path', async t => {
 	fs.writeFileSync(path.join(t.context.tmp, 'cwd/foo'), 'lorem ipsum');
 	fs.writeFileSync(path.join(t.context.tmp, 'cwd/bar'), 'dolor sit amet');
 
-	const to = await cpy(['foo', 'bar'], t.context.tmp, {cwd: path.join(t.context.tmp, 'cwd')});
+	const to = await cpy(['foo', 'bar'], t.context.tmp, {
+		cwd: path.join(t.context.tmp, 'cwd')
+	});
 
 	t.deepEqual(to, [
 		path.join(t.context.tmp, 'foo'),

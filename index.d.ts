@@ -1,8 +1,8 @@
-import {GlobbyOptions} from 'globby';
+import {GlobbyOptions as GlobOptions} from 'globby';
 import {Options as CpFileOptions} from 'cp-file';
 
 declare namespace cpy {
-	interface SourceFile {
+	interface Entry {
 		/**
 		Resolved path to the file.
 
@@ -11,9 +11,9 @@ declare namespace cpy {
 		readonly path: string;
 
 		/**
-		Relative path to the file from `cwd`.
+		Relative path to the file from cwd.
 
-		@example 'dir/foo.js' if `cwd` was '/tmp'
+		@example 'dir/foo.js'
 		*/
 		readonly relativePath: string;
 
@@ -39,7 +39,7 @@ declare namespace cpy {
 		readonly extension: string;
 	}
 
-	interface Options extends Readonly<GlobbyOptions>, CpFileOptions {
+	interface Options extends Readonly<GlobOptions>, CpFileOptions {
 		/**
 		Working directory to find source files.
 
@@ -48,11 +48,11 @@ declare namespace cpy {
 		readonly cwd?: string;
 
 		/**
-		Preserve path structure.
+		Flatten directory tree.
 
 		@default false
 		*/
-		readonly parents?: boolean;
+		readonly flat?: boolean;
 
 		/**
 		Filename or function returning a filename used to rename every file in `source`.
@@ -64,6 +64,9 @@ declare namespace cpy {
 		(async () => {
 			await cpy('foo.js', 'destination', {
 				rename: basename => `prefix-${basename}`
+			});
+			await cpy('foo.js', 'destination', {
+				rename: 'new-name'
 			});
 		})();
 		```
@@ -102,7 +105,7 @@ declare namespace cpy {
 		})();
 		```
 		*/
-		readonly filter?: (file: SourceFile) => (boolean | Promise<boolean>);
+		readonly filter?: (file: Entry) => boolean | Promise<boolean>;
 	}
 
 	interface ProgressData {
@@ -133,27 +136,48 @@ declare namespace cpy {
 			handler: (progress: ProgressData) => void
 		): Promise<string[]>;
 	}
+
+	interface CopyStatus {
+		written: number;
+		percent: number;
+	}
 }
 
 /**
-Copy files.
+	Copy files.
 
-@param source - Files to copy. If any of the files do not exist, an error will be thrown (does not apply to globs).
-@param destination - Destination directory.
-@param options - In addition to the options defined here, options are passed to [globby](https://github.com/sindresorhus/globby#options).
+	@param source - Files to copy. If any of the files do not exist, an error will be thrown (does not apply to globs).
+	@param destination - Destination directory.
+	@param options - In addition to the options defined here, options are passed to [globby](https://github.com/sindresorhus/globby#options).
 
-@example
-```
-import cpy = require('cpy');
+	@example
+	```
+	const cpy = require('cpy');
 
-(async () => {
-	await cpy(['source/*.png', '!source/goat.png'], 'destination');
-	console.log('Files copied!');
-})();
-```
+	(async () => {
+		await cpy([
+			'source/*.png', // Copy all .png files
+			'!source/goat.png', // Ignore goat.png
+		], 'destination');
+
+		// Copy node_modules to destination/node_modules
+		await cpy('node_modules', 'destination');
+
+		// Copy node_modules content to destination
+		await cpy('node_modules/**', 'destination');
+
+		// Copy node_modules structure but skip all files except any .json files
+		await cpy('node_modules/**\/*.json', 'destination');
+
+		// Copy all png files into destination without keeping directory structure
+		await cpy('**\/*.png', 'destination', {flat: true});
+
+		console.log('Files copied!');
+	})();
+	```
 */
 declare function cpy(
-	source: string | ReadonlyArray<string>,
+	source: string | readonly string[],
 	destination: string,
 	options?: cpy.Options
 ): Promise<string[]> & cpy.ProgressEmitter;

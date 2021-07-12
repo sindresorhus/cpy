@@ -4,65 +4,125 @@ const path = require('path');
 const os = require('os');
 const pMap = require('p-map');
 const arrify = require('arrify');
-const globby = require('globby');
-const hasGlob = require('has-glob');
 const cpFile = require('cp-file');
-const junk = require('junk');
 const pFilter = require('p-filter');
 const CpyError = require('./cpy-error');
+const GlobPattern = require('./glob-pattern');
+const glob = require('globby');
 
+const defaultConcurrency = (os.cpus().length || 1) * 2;
+
+/**
+ * @type {import('./index').Options}
+ */
 const defaultOptions = {
-	ignoreJunk: true
+	ignoreJunk: true,
+	flat: false,
+	cwd: process.cwd()
 };
 
-class SourceFile {
-	constructor(relativePath, path) {
-		this.path = path;
-		this.relativePath = relativePath;
+class Entry {
+	/**
+	 * @param {string} source
+	 * @param {string} relativePath
+	 * @param {GlobPattern} pattern
+	 */
+	constructor(source, relativePath, pattern) {
+		/**
+		 * @type {string}
+		 */
+		this.path = source.split('/').join(path.sep);
+
+		/**
+		 * @type {string}
+		 */
+		this.relativePath = relativePath.split('/').join(path.sep);
+
+		this.pattern = pattern;
+
 		Object.freeze(this);
 	}
 
 	get name() {
-		return path.basename(this.relativePath);
+		return path.basename(this.path);
 	}
 
 	get nameWithoutExtension() {
-		return path.basename(this.relativePath, path.extname(this.relativePath));
+		return path.basename(this.path, path.extname(this.path));
 	}
 
 	get extension() {
-		return path.extname(this.relativePath).slice(1);
+		return path.extname(this.path).slice(1);
 	}
 }
 
-const preprocessSourcePath = (source, options) => path.resolve(options.cwd ? options.cwd : process.cwd(), source);
+/**
+ * @param {object} props
+ * @param {Entry} props.entry
+ * @param {import('./index').Options}
+ * @param {string} props.destination
+ * @returns {string}
+ */
+const preprocessDestinationPath = ({entry, destination, options}) => {
+	if (entry.pattern.hasMagic()) {
+		if (options.flat) {
+			if (path.isAbsolute(destination)) {
+				return path.join(destination, entry.name);
+			}
 
-const preprocessDestinationPath = (source, destination, options) => {
-	let basename = path.basename(source);
+			return path.join(options.cwd, destination, entry.name);
+		}
 
-	if (typeof options.rename === 'string') {
-		basename = options.rename;
-	} else if (typeof options.rename === 'function') {
-		basename = options.rename(basename);
+		return path.join(
+			destination,
+			path.relative(entry.pattern.normalizedPath, entry.path)
+		);
 	}
 
-	if (options.cwd) {
-		destination = path.resolve(options.cwd, destination);
+	if (path.isAbsolute(destination)) {
+		return path.join(destination, entry.name);
 	}
 
-	if (options.parents) {
-		const dirname = path.dirname(source);
-		const parsedDirectory = path.parse(dirname);
-		return path.join(destination, dirname.replace(parsedDirectory.root, path.sep), basename);
-	}
-
-	return path.join(destination, basename);
+	return path.join(options.cwd, destination, path.relative(options.cwd, entry.path));
 };
 
-module.exports = (source, destination, {
-	concurrency = (os.cpus().length || 1) * 2,
-	...options
-} = {}) => {
+/**
+ * @param {string} source
+ * @param {string|Function} rename
+ */
+const renameFile = (source, rename) => {
+	const filename = path.basename(source, path.extname(source));
+	const ext = path.extname(source);
+	const dir = path.dirname(source);
+	if (typeof rename === 'string') {
+		return path.join(dir, rename);
+	}
+
+	if (typeof rename === 'function') {
+		return path.join(dir, `${rename(filename)}${ext}`);
+	}
+
+	return source;
+};
+
+/**
+ * @param {string|string[]} source
+ * @param {string} destination
+ * @param {import('./index').Options} options
+ */
+const cpy = (
+	source,
+	destination,
+	{concurrency = defaultConcurrency, ...options} = {}
+) => {
+	/**
+	 * @type {Map<string, import('./index').CopyStatus>}
+	 */
+	const copyStatus = new Map();
+
+	/**
+	 * @type {import('events').EventEmitter}
+	 */
 	const progressEmitter = new EventEmitter();
 
 	options = {
@@ -71,39 +131,55 @@ module.exports = (source, destination, {
 	};
 
 	const promise = (async () => {
-		source = arrify(source);
+		/**
+		 * @type {Entry[]}
+		 */
+		let entries = [];
+		let completedFiles = 0;
+		let completedSize = 0;
+		/**
+		 * @type {GlobPattern[]}
+		 */
+		let patterns = arrify(source).map(string => string.replace(/\\/g, '/'));
 
-		if (source.length === 0 || !destination) {
+		if (patterns.length === 0 || !destination) {
 			throw new CpyError('`source` and `destination` required');
 		}
 
-		const copyStatus = new Map();
-		let completedFiles = 0;
-		let completedSize = 0;
+		patterns = patterns.map(pattern => new GlobPattern(pattern, destination, options));
 
-		let files;
-		try {
-			files = await globby(source, options);
+		for (const pattern of patterns) {
+			/**
+			 * @type {string[]}
+			 */
+			let matches = [];
 
-			if (options.ignoreJunk) {
-				files = files.filter(file => junk.not(path.basename(file)));
+			try {
+				matches = pattern.getMatches();
+			} catch (error) {
+				throw new CpyError(
+					`Cannot glob \`${pattern.originalPath}\`: ${error.message}`,
+					error
+				);
 			}
-		} catch (error) {
-			throw new CpyError(`Cannot glob \`${source}\`: ${error.message}`, error);
-		}
 
-		if (files.length === 0 && !hasGlob(source)) {
-			throw new CpyError(`Cannot copy \`${source}\`: the file doesn't exist`);
-		}
+			if (matches.length === 0 && !glob.hasMagic(pattern.originalPath)) {
+				throw new CpyError(
+					`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`
+				);
+			}
 
-		let sources = files.map(sourcePath => new SourceFile(sourcePath, preprocessSourcePath(sourcePath, options)));
+			entries = [
+				...entries,
+				...matches.map(sourcePath => new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern))
+			];
+		}
 
 		if (options.filter !== undefined) {
-			const filteredSources = await pFilter(sources, options.filter, {concurrency: 1024});
-			sources = filteredSources;
+			entries = await pFilter(entries, options.filter, {concurrency: 1024});
 		}
 
-		if (sources.length === 0) {
+		if (entries.length === 0) {
 			progressEmitter.emit('progress', {
 				totalFiles: 0,
 				percent: 1,
@@ -112,10 +188,19 @@ module.exports = (source, destination, {
 			});
 		}
 
+		/**
+		 * @param {import('cp-file').ProgressData} event
+		 */
 		const fileProgressHandler = event => {
-			const fileStatus = copyStatus.get(event.src) || {written: 0, percent: 0};
+			const fileStatus = copyStatus.get(event.src) || {
+				written: 0,
+				percent: 0
+			};
 
-			if (fileStatus.written !== event.written || fileStatus.percent !== event.percent) {
+			if (
+				fileStatus.written !== event.written ||
+				fileStatus.percent !== event.percent
+			) {
 				completedSize -= fileStatus.written;
 				completedSize += event.written;
 
@@ -129,25 +214,42 @@ module.exports = (source, destination, {
 				});
 
 				progressEmitter.emit('progress', {
-					totalFiles: files.length,
-					percent: completedFiles / files.length,
+					totalFiles: entries.length,
+					percent: completedFiles / entries.length,
 					completedFiles,
 					completedSize
 				});
 			}
 		};
 
-		return pMap(sources, async source => {
-			const to = preprocessDestinationPath(source.relativePath, destination, options);
+		return pMap(
+			entries,
+			async entry => {
+				const to = renameFile(
+					preprocessDestinationPath({
+						entry,
+						destination,
+						options
+					}),
+					options.rename
+				);
 
-			try {
-				await cpFile(source.path, to, options).on('progress', fileProgressHandler);
-			} catch (error) {
-				throw new CpyError(`Cannot copy from \`${source.relativePath}\` to \`${to}\`: ${error.message}`, error);
-			}
+				try {
+					await cpFile(entry.path, to, options).on(
+						'progress',
+						fileProgressHandler
+					);
+				} catch (error) {
+					throw new CpyError(
+						`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`,
+						error
+					);
+				}
 
-			return to;
-		}, {concurrency});
+				return to;
+			},
+			{concurrency}
+		);
 	})();
 
 	promise.on = (...arguments_) => {
@@ -157,3 +259,5 @@ module.exports = (source, destination, {
 
 	return promise;
 };
+
+module.exports = cpy;
