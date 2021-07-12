@@ -1,41 +1,40 @@
-'use strict';
-const EventEmitter = require('events');
-const path = require('path');
-const os = require('os');
-const pMap = require('p-map');
-const arrify = require('arrify');
-const cpFile = require('cp-file');
-const pFilter = require('p-filter');
-const CpyError = require('./cpy-error');
-const GlobPattern = require('./glob-pattern');
-const glob = require('globby');
+import EventEmitter from 'node:events';
+import path from 'node:path';
+import os from 'node:os';
+import pMap from 'p-map';
+import arrify from 'arrify';
+import cpFile from 'cp-file';
+import pFilter from 'p-filter';
+import glob from 'globby';
+import CpyError from './cpy-error.js';
+import GlobPattern from './glob-pattern.js';
 
-const defaultConcurrency = (os.cpus().length || 1) * 2;
+const defaultConcurrency = (os.cpus().length || 1) * 2; // eslint-disable-line unicorn/explicit-length-check
 
 /**
- * @type {import('./index').Options}
- */
+@type {import('./index').Options}
+*/
 const defaultOptions = {
 	ignoreJunk: true,
 	flat: false,
-	cwd: process.cwd()
+	cwd: process.cwd(),
 };
 
 class Entry {
 	/**
-	 * @param {string} source
-	 * @param {string} relativePath
-	 * @param {GlobPattern} pattern
-	 */
+	@param {string} source
+	@param {string} relativePath
+	@param {GlobPattern} pattern
+	*/
 	constructor(source, relativePath, pattern) {
 		/**
-		 * @type {string}
-		 */
+		@type {string}
+		*/
 		this.path = source.split('/').join(path.sep);
 
 		/**
-		 * @type {string}
-		 */
+		@type {string}
+		*/
 		this.relativePath = relativePath.split('/').join(path.sep);
 
 		this.pattern = pattern;
@@ -57,12 +56,12 @@ class Entry {
 }
 
 /**
- * @param {object} props
- * @param {Entry} props.entry
- * @param {import('./index').Options}
- * @param {string} props.destination
- * @returns {string}
- */
+@param {object} props
+@param {Entry} props.entry
+@param {import('./index').Options}
+@param {string} props.destination
+@returns {string}
+*/
 const preprocessDestinationPath = ({entry, destination, options}) => {
 	if (entry.pattern.hasMagic()) {
 		if (options.flat) {
@@ -75,7 +74,7 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 
 		return path.join(
 			destination,
-			path.relative(entry.pattern.normalizedPath, entry.path)
+			path.relative(entry.pattern.normalizedPath, entry.path),
 		);
 	}
 
@@ -87,9 +86,9 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 };
 
 /**
- * @param {string} source
- * @param {string|Function} rename
- */
+@param {string} source
+@param {string|Function} rename
+*/
 const renameFile = (source, rename) => {
 	const filename = path.basename(source, path.extname(source));
 	const ext = path.extname(source);
@@ -106,40 +105,40 @@ const renameFile = (source, rename) => {
 };
 
 /**
- * @param {string|string[]} source
- * @param {string} destination
- * @param {import('./index').Options} options
- */
-const cpy = (
+@param {string|string[]} source
+@param {string} destination
+@param {import('./index').Options} options
+*/
+export default function cpy(
 	source,
 	destination,
-	{concurrency = defaultConcurrency, ...options} = {}
-) => {
+	{concurrency = defaultConcurrency, ...options} = {},
+) {
 	/**
-	 * @type {Map<string, import('./index').CopyStatus>}
-	 */
+	@type {Map<string, import('./index').CopyStatus>}
+	*/
 	const copyStatus = new Map();
 
 	/**
-	 * @type {import('events').EventEmitter}
-	 */
+	@type {import('events').EventEmitter}
+	*/
 	const progressEmitter = new EventEmitter();
 
 	options = {
 		...defaultOptions,
-		...options
+		...options,
 	};
 
 	const promise = (async () => {
 		/**
-		 * @type {Entry[]}
-		 */
+		@type {Entry[]}
+		*/
 		let entries = [];
 		let completedFiles = 0;
 		let completedSize = 0;
 		/**
-		 * @type {GlobPattern[]}
-		 */
+		@type {GlobPattern[]}
+		*/
 		let patterns = arrify(source).map(string => string.replace(/\\/g, '/'));
 
 		if (patterns.length === 0 || !destination) {
@@ -150,8 +149,8 @@ const cpy = (
 
 		for (const pattern of patterns) {
 			/**
-			 * @type {string[]}
-			 */
+			@type {string[]}
+			*/
 			let matches = [];
 
 			try {
@@ -159,19 +158,19 @@ const cpy = (
 			} catch (error) {
 				throw new CpyError(
 					`Cannot glob \`${pattern.originalPath}\`: ${error.message}`,
-					error
+					error,
 				);
 			}
 
 			if (matches.length === 0 && !glob.hasMagic(pattern.originalPath)) {
 				throw new CpyError(
-					`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`
+					`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`,
 				);
 			}
 
 			entries = [
 				...entries,
-				...matches.map(sourcePath => new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern))
+				...matches.map(sourcePath => new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern)),
 			];
 		}
 
@@ -184,40 +183,40 @@ const cpy = (
 				totalFiles: 0,
 				percent: 1,
 				completedFiles: 0,
-				completedSize: 0
+				completedSize: 0,
 			});
 		}
 
 		/**
-		 * @param {import('cp-file').ProgressData} event
-		 */
+		@param {import('cp-file').ProgressData} event
+		*/
 		const fileProgressHandler = event => {
-			const fileStatus = copyStatus.get(event.src) || {
-				written: 0,
-				percent: 0
+			const fileStatus = copyStatus.get(event.sourcePath) || {
+				writtenBytes: 0,
+				percent: 0,
 			};
 
 			if (
-				fileStatus.written !== event.written ||
-				fileStatus.percent !== event.percent
+				fileStatus.writtenBytes !== event.writtenBytes
+				|| fileStatus.percent !== event.percent
 			) {
-				completedSize -= fileStatus.written;
-				completedSize += event.written;
+				completedSize -= fileStatus.writtenBytes;
+				completedSize += event.writtenBytes;
 
 				if (event.percent === 1 && fileStatus.percent !== 1) {
 					completedFiles++;
 				}
 
-				copyStatus.set(event.src, {
-					written: event.written,
-					percent: event.percent
+				copyStatus.set(event.sourcePath, {
+					writtenBytes: event.writtenBytes,
+					percent: event.percent,
 				});
 
 				progressEmitter.emit('progress', {
 					totalFiles: entries.length,
 					percent: completedFiles / entries.length,
 					completedFiles,
-					completedSize
+					completedSize,
 				});
 			}
 		};
@@ -229,26 +228,26 @@ const cpy = (
 					preprocessDestinationPath({
 						entry,
 						destination,
-						options
+						options,
 					}),
-					options.rename
+					options.rename,
 				);
 
 				try {
 					await cpFile(entry.path, to, options).on(
 						'progress',
-						fileProgressHandler
+						fileProgressHandler,
 					);
 				} catch (error) {
 					throw new CpyError(
 						`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`,
-						error
+						error,
 					);
 				}
 
 				return to;
 			},
-			{concurrency}
+			{concurrency},
 		);
 	})();
 
@@ -258,6 +257,4 @@ const cpy = (
 	};
 
 	return promise;
-};
-
-module.exports = cpy;
+}

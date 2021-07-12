@@ -1,15 +1,14 @@
-'use strict';
-const glob = require('globby');
-const junk = require('junk');
-const path = require('path');
-const fs = require('fs');
+import path from 'node:path';
+import fs from 'node:fs';
+import glob from 'globby';
+import junk from 'junk';
 
-class GlobPattern {
+export default class GlobPattern {
 	/**
-	 * @param {string} pattern
-	 * @param {string} destination
-	 * @param {import('.').Options} options
-	 */
+	@param {string} pattern
+	@param {string} destination
+	@param {import('.').Options} options
+	*/
 	constructor(pattern, destination, options) {
 		this.path = pattern;
 		this.originalPath = pattern;
@@ -17,9 +16,9 @@ class GlobPattern {
 		this.options = options;
 
 		if (
-			!glob.hasMagic(pattern) &&
-			fs.existsSync(pattern) &&
-			fs.lstatSync(pattern).isDirectory()
+			!glob.hasMagic(pattern)
+				&& fs.existsSync(pattern)
+				&& fs.lstatSync(pattern).isDirectory()
 		) {
 			this.path = [pattern, '**'].join('/');
 		}
@@ -50,7 +49,7 @@ class GlobPattern {
 			...this.options,
 			dot: true,
 			absolute: true,
-			onlyFiles: true
+			onlyFiles: true,
 		});
 
 		if (this.options.ignoreJunk) {
@@ -60,5 +59,3 @@ class GlobPattern {
 		return matches;
 	}
 }
-
-module.exports = GlobPattern;

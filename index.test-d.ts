@@ -1,33 +1,32 @@
 import {expectType} from 'tsd';
-import cpy = require('.');
-import {ProgressEmitter, ProgressData} from '.';
+import cpy, {ProgressEmitter, ProgressData, Entry} from './index.js';
 
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy(['source/*.png', '!source/goat.png'], 'destination')
+	cpy(['source/*.png', '!source/goat.png'], 'destination'),
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {rename: 'foobar'})
+	cpy('foo.js', 'destination', {rename: 'foobar'}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {rename: basename => `prefix-${basename}`})
+	cpy('foo.js', 'destination', {rename: basename => `prefix-${basename}`}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {cwd: '/'})
+	cpy('foo.js', 'destination', {cwd: '/'}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {flat: true})
+	cpy('foo.js', 'destination', {flat: true}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {overwrite: false})
+	cpy('foo.js', 'destination', {overwrite: false}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {concurrency: 2})
+	cpy('foo.js', 'destination', {concurrency: 2}),
 );
 
 expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {
 		filter: file => {
-			expectType<cpy.Entry>(file);
+			expectType<Entry>(file);
 
 			expectType<string>(file.path);
 			expectType<string>(file.relativePath);
@@ -35,11 +34,11 @@ expectType<Promise<string[]> & ProgressEmitter>(
 			expectType<string>(file.nameWithoutExtension);
 			expectType<string>(file.extension);
 			return true;
-		}
-	})
+		},
+	}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	cpy('foo.js', 'destination', {filter: async (file: cpy.Entry) => true})
+	cpy('foo.js', 'destination', {filter: async (_file: Entry) => true}),
 );
 
 expectType<Promise<string[]>>(
@@ -50,5 +49,5 @@ expectType<Promise<string[]>>(
 		expectType<number>(progress.totalFiles);
 		expectType<number>(progress.completedSize);
 		expectType<number>(progress.percent);
-	})
+	}),
 );

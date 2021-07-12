@@ -19,28 +19,26 @@ $ npm install cpy
 ## Usage
 
 ```js
-const cpy = require('cpy');
+import cpy from 'cpy';
 
-(async () => {
-	await cpy([
-		'source/*.png', // Copy all .png files
-		'!source/goat.png', // Ignore goat.png
-	], 'destination');
+await cpy([
+	'source/*.png', // Copy all .png files
+	'!source/goat.png', // Ignore goat.png
+], 'destination');
 
-	// Copy node_modules to destination/node_modules
-	await cpy('node_modules', 'destination');
+// Copy node_modules to destination/node_modules
+await cpy('node_modules', 'destination');
 
-	// Copy node_modules content to destination
-	await cpy('node_modules/**', 'destination');
+// Copy node_modules content to destination
+await cpy('node_modules/**', 'destination');
 
-	// Copy node_modules structure but skip all files except package.json files
-	await cpy('node_modules/**/*.json', 'destination');
+// Copy node_modules structure but skip all files except package.json files
+await cpy('node_modules/**/*.json', 'destination');
 
-	// Copy all png files into destination without keeping directory structure
-	await cpy('**/*.png', 'destination', {flat: true});
+// Copy all png files into destination without keeping directory structure
+await cpy('**/*.png', 'destination', {flat: true});
 
-	console.log('Files copied!');
-})();
+console.log('Files copied!');
 ```
 
 ## API
@@ -92,15 +90,12 @@ Default: `false`
 
 Flatten directory structure. All copied files will be put in the same directory.
 
-
 ```js
-const cpy = require('cpy');
+import cpy from 'cpy';
 
-(async () => {
-	await cpy('src/**/*.js', 'destination', {
-		flat: true
-	});
-})();
+await cpy('src/**/*.js', 'destination', {
+	flat: true
+});
 ```
 
 ##### rename
@@ -110,16 +105,15 @@ Type: `string | Function`
 Filename or function returning a filename used to rename every file in `source`.
 
 ```js
-const cpy = require('cpy');
+import cpy from 'cpy';
 
-(async () => {
-	await cpy('foo.js', 'destination', {
-		rename: basename => `prefix-${basename}`
-	});
-	await cpy('foo.js', 'destination', {
-		rename: 'new-name'
-	});
-})();
+await cpy('foo.js', 'destination', {
+	rename: basename => `prefix-${basename}`
+});
+
+await cpy('foo.js', 'destination', {
+	rename: 'new-name'
+});
 ```
 
 ##### concurrency
@@ -147,13 +141,11 @@ Receives a source file object as the first argument.
 Return true to include, false to exclude. You can also return a Promise that resolves to true or false.
 
 ```js
-const cpy = require('cpy');
+import cpy from 'cpy';
 
-(async () => {
-	await cpy('foo', 'destination', {
-		filter: file => file.extension !== 'nocopy'
-	});
-})();
+await cpy('foo', 'destination', {
+	filter: file => file.extension !== 'nocopy'
+});
 ```
 
 ##### Source file object
@@ -218,11 +210,11 @@ Type: `Function`
 Note that the `.on()` method is available only right after the initial `cpy` call, so make sure you add a `handler` before awaiting the promise:
 
 ```js
-(async () => {
-	await cpy(source, destination).on('progress', progress => {
-		// …
-	});
-})();
+import cpy from 'cpy';
+
+await cpy(source, destination).on('progress', progress => {
+	// …
+});
 ```
 
 ## Related
