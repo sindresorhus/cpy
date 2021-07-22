@@ -5,7 +5,7 @@ import pMap from 'p-map';
 import arrify from 'arrify';
 import cpFile from 'cp-file';
 import pFilter from 'p-filter';
-import glob from 'globby';
+import {isDynamicPattern} from 'globby';
 import CpyError from './cpy-error.js';
 import GlobPattern from './glob-pattern.js';
 
@@ -162,7 +162,7 @@ export default function cpy(
 				);
 			}
 
-			if (matches.length === 0 && !glob.hasMagic(pattern.originalPath)) {
+			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath)) {
 				throw new CpyError(
 					`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`,
 				);

@@ -1,4 +1,4 @@
-import {GlobbyOptions as GlobOptions} from 'globby';
+import {Options as GlobOptions} from 'globby';
 import {Options as CpFileOptions} from 'cp-file';
 
 export interface Entry {

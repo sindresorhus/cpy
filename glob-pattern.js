@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import glob from 'globby';
+import {globbySync, isDynamicPattern} from 'globby';
 import junk from 'junk';
 
 export default class GlobPattern {
@@ -16,7 +16,7 @@ export default class GlobPattern {
 		this.options = options;
 
 		if (
-			!glob.hasMagic(pattern)
+			!isDynamicPattern(pattern)
 				&& fs.existsSync(pattern)
 				&& fs.lstatSync(pattern).isDirectory()
 		) {
@@ -30,7 +30,7 @@ export default class GlobPattern {
 
 	get normalizedPath() {
 		const segments = this.originalPath.split('/');
-		const magicIndex = segments.findIndex(item => item ? glob.hasMagic(item) : false);
+		const magicIndex = segments.findIndex(item => item ? isDynamicPattern(item) : false);
 		const normalized = segments.slice(0, magicIndex).join('/');
 
 		if (normalized) {
@@ -41,11 +41,11 @@ export default class GlobPattern {
 	}
 
 	hasMagic() {
-		return glob.hasMagic(this.options.flat ? this.path : this.originalPath);
+		return isDynamicPattern(this.options.flat ? this.path : this.originalPath);
 	}
 
 	getMatches() {
-		let matches = glob.sync(this.path, {
+		let matches = globbySync(this.path, {
 			...this.options,
 			dot: true,
 			absolute: true,
