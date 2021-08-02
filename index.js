@@ -18,6 +18,7 @@ const defaultOptions = {
 	ignoreJunk: true,
 	flat: false,
 	cwd: process.cwd(),
+	up: 0,
 };
 
 class Entry {
@@ -74,7 +75,7 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 
 		return path.join(
 			destination,
-			path.relative(entry.pattern.normalizedPath, entry.path),
+			trimPath(path.relative(entry.pattern.normalizedPath, entry.path), options.up),
 		);
 	}
 
@@ -82,8 +83,25 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 		return path.join(destination, entry.name);
 	}
 
-	return path.join(options.cwd, destination, path.relative(options.cwd, entry.path));
+	return path.join(options.cwd, destination, trimPath(path.relative(options.cwd, entry.path), options.up));
 };
+
+/**
+@param {string} source
+@param {boolean|int} up
+*/
+function trimPath(source, up) {
+  if (!up) {
+    return source;
+  }
+  if (up === true) {
+    return path.basename(source);
+  }
+  if ((path.normalize(source).split(path.sep).length - 1) < up) {
+    throw new Error('cant go up that far');
+  }
+  return path.join.apply(path, path.normalize(source).split(path.sep).slice(up));
+}
 
 /**
 @param {string} source

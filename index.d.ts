@@ -54,6 +54,13 @@ export interface Options extends Readonly<GlobOptions>, CpFileOptions {
 	readonly flat?: boolean;
 
 	/**
+	Trim path from files being copied.
+
+	@default 0
+	*/
+	readonly up?: boolean;
+
+	/**
 	Filename or function returning a filename used to rename every file in `source`.
 
 	@example

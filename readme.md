@@ -83,6 +83,21 @@ Default: `true`
 
 Overwrite existing files.
 
+##### up
+
+Type: `number`\
+Default: `0`
+
+Trim path from files being copied.
+
+```js
+import cpy from 'cpy';
+
+await cpy('src/**/*.js', 'destination', {
+	up: 2
+});
+```
+
 ##### flat
 
 Type: `boolean`\
