@@ -100,7 +100,7 @@ function trimPath(source, up) {
   if ((path.normalize(source).split(path.sep).length - 1) < up) {
     throw new Error('cant go up that far');
   }
-  return path.join.apply(path, path.normalize(source).split(path.sep).slice(up));
+  return path.join(path.normalize(source).split(path.sep).slice(up));
 }
 
 /**
