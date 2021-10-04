@@ -140,12 +140,14 @@ export default function cpy(
 		@type {GlobPattern[]}
 		*/
 		let patterns = arrify(source).map(string => string.replace(/\\/g, '/'));
+		const sources = patterns.filter(item => !item.startsWith('!'));
+		const ignore = patterns.filter(item => item.startsWith('!'));
 
-		if (patterns.length === 0 || !destination) {
+		if (sources.length === 0 || !destination) {
 			throw new CpyError('`source` and `destination` required');
 		}
 
-		patterns = patterns.map(pattern => new GlobPattern(pattern, destination, options));
+		patterns = patterns.map(pattern => new GlobPattern(pattern, destination, {...options, ignore}));
 
 		for (const pattern of patterns) {
 			/**
@@ -162,7 +164,7 @@ export default function cpy(
 				);
 			}
 
-			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath)) {
+			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath) && !isDynamicPattern(ignore)) {
 				throw new CpyError(
 					`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`,
 				);
@@ -173,6 +175,7 @@ export default function cpy(
 				...matches.map(sourcePath => new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern)),
 			];
 		}
+
 
 		if (options.filter !== undefined) {
 			entries = await pFilter(entries, options.filter, {concurrency: 1024});
