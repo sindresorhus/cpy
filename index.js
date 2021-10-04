@@ -6,6 +6,7 @@ import arrify from 'arrify';
 import cpFile from 'cp-file';
 import pFilter from 'p-filter';
 import {isDynamicPattern} from 'globby';
+import micromatch from 'micromatch';
 import CpyError from './cpy-error.js';
 import GlobPattern from './glob-pattern.js';
 
@@ -54,6 +55,24 @@ class Entry {
 		return path.extname(this.path).slice(1);
 	}
 }
+
+/**
+ * Expand patterns like:
+ * "node_modules/{globby,micromatch}" into ["node_modules/globby", "node_modules/micromatch"]
+@param {string[]} patterns
+@returns {string[]}
+*/
+const expandPatternsWithBraceExpansion = patterns => {
+	let collection = [];
+	for (const pattern of patterns) {
+		collection = [...collection, ...micromatch.braces(pattern, {
+			expand: true,
+			nodupes: true,
+		})];
+	}
+
+	return collection;
+};
 
 /**
 @param {object} props
@@ -139,7 +158,8 @@ export default function cpy(
 		/**
 		@type {GlobPattern[]}
 		*/
-		let patterns = arrify(source).map(string => string.replace(/\\/g, '/'));
+		let patterns = expandPatternsWithBraceExpansion(arrify(source))
+			.map(string => string.replace(/\\/g, '/'));
 		const sources = patterns.filter(item => !item.startsWith('!'));
 		const ignore = patterns.filter(item => item.startsWith('!'));
 
