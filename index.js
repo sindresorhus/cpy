@@ -196,7 +196,6 @@ export default function cpy(
 			];
 		}
 
-
 		if (options.filter !== undefined) {
 			entries = await pFilter(entries, options.filter, {concurrency: 1024});
 		}
