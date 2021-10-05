@@ -83,6 +83,13 @@ Default: `true`
 
 Overwrite existing files.
 
+##### followSymbolicLinks
+
+Type: `boolean`\
+Default: `false`
+
+Indicates whether to traverse descendants of symbolic link directories when expanding `**` patterns.
+
 ##### flat
 
 Type: `boolean`\
