@@ -101,11 +101,11 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 		return path.join(destination, entry.name);
 	}
 
-	if (path.isAbsolute(entry.path) && entry.pattern.isDirectory) {
+	if (entry.pattern.isDirectory && path.relative(options.cwd, entry.path).startsWith('..')) {
 		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath), path.relative(entry.pattern.originalPath, entry.path));
 	}
 
-	if (path.isAbsolute(entry.path) && !entry.pattern.isDirectory) {
+	if (!entry.pattern.isDirectory && entry.path === entry.relativePath) {
 		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath), path.relative(entry.pattern.originalPath, entry.path));
 	}
 
