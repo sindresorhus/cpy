@@ -46,6 +46,7 @@ export default class GlobPattern {
 
 	getMatches() {
 		let matches = globbySync(this.path, {
+			followSymbolicLinks: false,
 			...this.options,
 			dot: true,
 			absolute: true,
