@@ -20,6 +20,7 @@
 	},
 	"files": [
 		"cpy-error.js",
+		"glob-pattern.js",
 		"index.js",
 		"index.d.ts"
 	],
