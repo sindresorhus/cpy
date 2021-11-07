@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import {globbySync, isDynamicPattern} from 'globby';
-import junk from 'junk';
+import {isNotJunk} from 'junk';
 
 export default class GlobPattern {
 	/**
@@ -17,8 +17,8 @@ export default class GlobPattern {
 
 		if (
 			!isDynamicPattern(pattern)
-				&& fs.existsSync(pattern)
-				&& fs.lstatSync(pattern).isDirectory()
+			&& fs.existsSync(pattern)
+			&& fs.lstatSync(pattern).isDirectory()
 		) {
 			this.path = [pattern, '**'].join('/');
 		}
@@ -53,7 +53,7 @@ export default class GlobPattern {
 		});
 
 		if (this.options.ignoreJunk) {
-			matches = matches.filter(file => junk.not(path.basename(file)));
+			matches = matches.filter(file => isNotJunk(path.basename(file)));
 		}
 
 		return matches;
