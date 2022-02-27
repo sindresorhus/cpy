@@ -1,3 +1,4 @@
+import process from 'node:process';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -8,7 +9,7 @@ import proxyquire from 'proxyquire';
 import CpyError from './cpy-error.js';
 import cpy from './index.js';
 
-const read = (...args) => fs.readFileSync(path.join(...args), 'utf8');
+const read = (...arguments_) => fs.readFileSync(path.join(...arguments_), 'utf8');
 
 const cpyMockedError = module => proxyquire('.', {
 	[module]() {
@@ -62,7 +63,7 @@ test('throws on invalid concurrency value', async t => {
 
 test('copy array of files with filter', async t => {
 	await cpy(['license', 'package.json'], t.context.tmp, {
-		filter: file => {
+		filter(file) {
 			if (file.path.endsWith('license')) {
 				t.is(file.path, path.join(process.cwd(), 'license'));
 				t.is(file.name, 'license');
@@ -85,7 +86,7 @@ test('copy array of files with filter', async t => {
 
 test('copy array of files with async filter', async t => {
 	await cpy(['license', 'package.json'], t.context.tmp, {
-		filter: async file => {
+		async filter(file) {
 			if (file.path.endsWith(`${path.sep}license`)) {
 				t.is(file.path, path.join(process.cwd(), 'license'));
 				t.is(file.name, 'license');
@@ -411,7 +412,7 @@ test('reports correct completedSize', async t => {
 test('returns the event emitter on early rejection', t => {
 	const rejectedPromise = cpy(null, null);
 	t.is(typeof rejectedPromise.on, 'function');
-	rejectedPromise.catch(() => {}); // eslint-disable-line promise/prefer-await-to-then
+	rejectedPromise.catch(() => {});
 });
 
 test('returns destination path', async t => {

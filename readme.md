@@ -12,8 +12,8 @@
 
 ## Install
 
-```
-$ npm install cpy
+```sh
+npm install cpy
 ```
 
 ## Usage

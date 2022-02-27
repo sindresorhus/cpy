@@ -25,7 +25,7 @@ expectType<Promise<string[]> & ProgressEmitter>(
 
 expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {
-		filter: file => {
+		filter(file) {
 			expectType<Entry>(file);
 
 			expectType<string>(file.path);

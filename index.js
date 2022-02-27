@@ -1,3 +1,4 @@
+import process from 'node:process';
 import EventEmitter from 'node:events';
 import path from 'node:path';
 import os from 'node:os';
@@ -62,17 +63,12 @@ Expand patterns like `'node_modules/{globby,micromatch}'` into `['node_modules/g
 @param {string[]} patterns
 @returns {string[]}
 */
-const expandPatternsWithBraceExpansion = patterns => {
-	let collection = [];
-	for (const pattern of patterns) {
-		collection = [...collection, ...micromatch.braces(pattern, {
-			expand: true,
-			nodupes: true,
-		})];
-	}
-
-	return collection;
-};
+const expandPatternsWithBraceExpansion = patterns => patterns.flatMap(pattern => (
+	micromatch.braces(pattern, {
+		expand: true,
+		nodupes: true,
+	})
+));
 
 /**
 @param {object} props
@@ -119,14 +115,14 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 */
 const renameFile = (source, rename) => {
 	const filename = path.basename(source, path.extname(source));
-	const ext = path.extname(source);
-	const dir = path.dirname(source);
+	const fileExtension = path.extname(source);
+	const directory = path.dirname(source);
 	if (typeof rename === 'string') {
-		return path.join(dir, rename);
+		return path.join(directory, rename);
 	}
 
 	if (typeof rename === 'function') {
-		return path.join(dir, `${rename(filename)}${ext}`);
+		return path.join(directory, `${rename(filename)}${fileExtension}`);
 	}
 
 	return source;
