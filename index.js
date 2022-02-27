@@ -57,8 +57,8 @@ class Entry {
 }
 
 /**
- * Expand patterns like:
- * "node_modules/{globby,micromatch}" into ["node_modules/globby", "node_modules/micromatch"]
+Expand patterns like `'node_modules/{globby,micromatch}'` into `['node_modules/globby', 'node_modules/micromatch']`.
+
 @param {string[]} patterns
 @returns {string[]}
 */
