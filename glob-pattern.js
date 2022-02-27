@@ -14,6 +14,7 @@ export default class GlobPattern {
 		this.originalPath = pattern;
 		this.destination = destination;
 		this.options = options;
+		this.isDirectory = false;
 
 		if (
 			!isDynamicPattern(pattern)
@@ -21,6 +22,7 @@ export default class GlobPattern {
 			&& fs.lstatSync(pattern).isDirectory()
 		) {
 			this.path = [pattern, '**'].join('/');
+			this.isDirectory = true;
 		}
 	}
 

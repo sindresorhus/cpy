@@ -6,6 +6,7 @@ import arrify from 'arrify';
 import cpFile from 'cp-file';
 import pFilter from 'p-filter';
 import {isDynamicPattern} from 'globby';
+import micromatch from 'micromatch';
 import CpyError from './cpy-error.js';
 import GlobPattern from './glob-pattern.js';
 
@@ -56,6 +57,24 @@ class Entry {
 }
 
 /**
+Expand patterns like `'node_modules/{globby,micromatch}'` into `['node_modules/globby', 'node_modules/micromatch']`.
+
+@param {string[]} patterns
+@returns {string[]}
+*/
+const expandPatternsWithBraceExpansion = patterns => {
+	let collection = [];
+	for (const pattern of patterns) {
+		collection = [...collection, ...micromatch.braces(pattern, {
+			expand: true,
+			nodupes: true,
+		})];
+	}
+
+	return collection;
+};
+
+/**
 @param {object} props
 @param {Entry} props.entry
 @param {import('./index').Options}
@@ -80,6 +99,15 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 
 	if (path.isAbsolute(destination)) {
 		return path.join(destination, entry.name);
+	}
+
+	// TODO: This check will not work correctly if `options.cwd` and `entry.path` are on different partitions on Windows, see: https://github.com/sindresorhus/import-local/pull/12
+	if (entry.pattern.isDirectory && path.relative(options.cwd, entry.path).startsWith('..')) {
+		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath), path.relative(entry.pattern.originalPath, entry.path));
+	}
+
+	if (!entry.pattern.isDirectory && entry.path === entry.relativePath) {
+		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath), path.relative(entry.pattern.originalPath, entry.path));
 	}
 
 	return path.join(options.cwd, destination, path.relative(options.cwd, entry.path));
@@ -136,16 +164,20 @@ export default function cpy(
 		let entries = [];
 		let completedFiles = 0;
 		let completedSize = 0;
+
 		/**
 		@type {GlobPattern[]}
 		*/
-		let patterns = arrify(source).map(string => string.replace(/\\/g, '/'));
+		let patterns = expandPatternsWithBraceExpansion(arrify(source))
+			.map(string => string.replace(/\\/g, '/'));
+		const sources = patterns.filter(item => !item.startsWith('!'));
+		const ignore = patterns.filter(item => item.startsWith('!'));
 
-		if (patterns.length === 0 || !destination) {
+		if (sources.length === 0 || !destination) {
 			throw new CpyError('`source` and `destination` required');
 		}
 
-		patterns = patterns.map(pattern => new GlobPattern(pattern, destination, options));
+		patterns = patterns.map(pattern => new GlobPattern(pattern, destination, {...options, ignore}));
 
 		for (const pattern of patterns) {
 			/**
@@ -162,7 +194,7 @@ export default function cpy(
 				);
 			}
 
-			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath)) {
+			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath) && !isDynamicPattern(ignore)) {
 				throw new CpyError(
 					`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`,
 				);
