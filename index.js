@@ -101,6 +101,7 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 		return path.join(destination, entry.name);
 	}
 
+	// TODO: This check will not work correctly if `options.cwd` and `entry.path` are on different partitions on Windows, see: https://github.com/sindresorhus/import-local/pull/12
 	if (entry.pattern.isDirectory && path.relative(options.cwd, entry.path).startsWith('..')) {
 		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath), path.relative(entry.pattern.originalPath, entry.path));
 	}
@@ -163,6 +164,7 @@ export default function cpy(
 		let entries = [];
 		let completedFiles = 0;
 		let completedSize = 0;
+
 		/**
 		@type {GlobPattern[]}
 		*/
