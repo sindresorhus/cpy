@@ -247,6 +247,25 @@ test('flatten directory tree', async t => {
 	);
 });
 
+test('flatten single file', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/bar.js'),
+		'console.log("bar");',
+	);
+
+	await cpy('source/bar.js', 'destination', {
+		cwd: t.context.tmp,
+		flat: true,
+	});
+
+	t.is(
+		read(t.context.tmp, 'source/bar.js'),
+		read(t.context.tmp, 'destination/bar.js'),
+	);
+});
+
 // TODO: Enable again when ESM supports mocking.
 // eslint-disable-next-line ava/no-skip-test
 test.skip('cp-file errors are CpyErrors', async t => {
