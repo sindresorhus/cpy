@@ -122,7 +122,7 @@ const trimPath = (source, trimPathComponents) => {
 	if (!trimPathComponents || trimPathComponents === 0) {
 		return source;
 	}
-	
+
 	if ((path.normalize(source).split(path.sep).length - 1) < trimPathComponents) {
 		throw new Error('cant go up that far');
 	}
