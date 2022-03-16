@@ -119,16 +119,16 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 @param {boolean|int} trimPathComponents
 */
 const trimPath = (source, trimPathComponents) => {
-  if (!trimPathComponents) {
-    return source;
-  }
-  if (trimPathComponents === true) {
-    return path.basename(source);
-  }
-  if ((path.normalize(source).split(path.sep).length - 1) < trimPathComponents) {
-    throw new Error('cant go up that far');
-  }
-  return path.join(path.normalize(source).split(path.sep).slice(trimPathComponents));
+	if (!trimPathComponents) {
+		return source;
+	}
+	if (trimPathComponents === true) {
+		return path.basename(source);
+	}
+	if ((path.normalize(source).split(path.sep).length - 1) < trimPathComponents) {
+		throw new Error('cant go up that far');
+	}
+	return path.join(path.normalize(source).split(path.sep).slice(trimPathComponents));
 }
 
 /**
