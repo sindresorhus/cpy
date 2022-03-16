@@ -116,18 +116,20 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 
 /**
 @param {string} source
-@param {boolean|int} trimPathComponents
+@param {int} trimPathComponents
 */
 const trimPath = (source, trimPathComponents) => {
 	if (!trimPathComponents || trimPathComponents === 0) {
 		return source;
 	}
 
-	if ((path.normalize(source).split(path.sep).length - 1) < trimPathComponents) {
+	const splitPath = path.normalize(source).split(path.sep);
+	if ((splitPath.length - 1) < trimPathComponents) {
 		throw new Error('cant go up that far');
 	}
 
-	return path.join(path.normalize(source).split(path.sep).slice(trimPathComponents));
+	const slicedPath = splitPath.slice(trimPathComponents);
+	return slicedPath.length === 1 ? slicedPath[0] : path.join(slicedPath);
 };
 
 /**

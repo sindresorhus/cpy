@@ -449,3 +449,20 @@ test('returns destination path', async t => {
 		path.join(t.context.tmp, 'bar'),
 	]);
 });
+
+test('trims path from files being copied', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'src'));
+	fs.mkdirSync(path.join(t.context.tmp, 'src/nested'));
+	fs.writeFileSync(path.join(t.context.tmp, 'src/nested/foo.txt'), 'lorem ipsum');
+	fs.writeFileSync(path.join(t.context.tmp, 'src/nested/bar.txt'), 'dolor sit amet');
+
+	const to = await cpy(path.join(t.context.tmp, 'src/**/*.txt'), t.context.tmp, {
+		trimPathComponents: 1,
+	});
+
+	t.deepEqual(to, [
+		path.join(t.context.tmp, 'bar.txt'),
+		path.join(t.context.tmp, 'foo.txt'),
+	]);
+});
