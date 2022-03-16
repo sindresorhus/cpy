@@ -58,7 +58,7 @@ export interface Options extends Readonly<GlobOptions>, CpFileOptions {
 
 	@default 0
 	*/
-	readonly trimPathComponents?: boolean;
+	readonly trimPathComponents?: number;
 
 	/**
 	Filename or function returning a filename used to rename every file in `source`.
