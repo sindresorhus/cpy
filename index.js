@@ -20,7 +20,7 @@ const defaultOptions = {
 	ignoreJunk: true,
 	flat: false,
 	cwd: process.cwd(),
-	up: 0,
+	trimPathComponents: 0,
 };
 
 class Entry {
@@ -90,7 +90,7 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 
 		return path.join(
 			destination,
-			trimPath(path.relative(entry.pattern.normalizedPath, entry.path), options.up),
+			trimPath(path.relative(entry.pattern.normalizedPath, entry.path), options.trimPathComponents),
 		);
 	}
 
@@ -111,24 +111,24 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath));
 	}
 
-	return path.join(options.cwd, destination, trimPath(path.relative(options.cwd, entry.path), options.up));
+	return path.join(options.cwd, destination, trimPath(path.relative(options.cwd, entry.path), options.trimPathComponents));
 };
 
 /**
 @param {string} source
-@param {boolean|int} up
+@param {boolean|int} trimPathComponents
 */
-function trimPath(source, up) {
-  if (!up) {
+const trimPath = (source, trimPathComponents) => {
+  if (!trimPathComponents) {
     return source;
   }
-  if (up === true) {
+  if (trimPathComponents === true) {
     return path.basename(source);
   }
-  if ((path.normalize(source).split(path.sep).length - 1) < up) {
+  if ((path.normalize(source).split(path.sep).length - 1) < trimPathComponents) {
     throw new Error('cant go up that far');
   }
-  return path.join(path.normalize(source).split(path.sep).slice(up));
+  return path.join(path.normalize(source).split(path.sep).slice(trimPathComponents));
 }
 
 /**

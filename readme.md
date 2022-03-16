@@ -83,7 +83,7 @@ Default: `true`
 
 Overwrite existing files.
 
-##### up
+##### trimPathComponents
 
 Type: `number`\
 Default: `0`
@@ -94,7 +94,7 @@ Trim path from files being copied.
 import cpy from 'cpy';
 
 await cpy('src/**/*.js', 'destination', {
-	up: 2
+	trimPathComponents: 2
 });
 ```
 
