@@ -90,7 +90,7 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 
 		return path.join(
 			destination,
-			trimPath(path.relative(entry.pattern.normalizedPath, entry.path), options.trimPathComponents),
+			trimPathComponents(path.relative(entry.pattern.normalizedPath, entry.path), options.trimPathComponents),
 		);
 	}
 
@@ -111,24 +111,24 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath));
 	}
 
-	return path.join(options.cwd, destination, trimPath(path.relative(options.cwd, entry.path), options.trimPathComponents));
+	return path.join(options.cwd, destination, trimPathComponents(path.relative(options.cwd, entry.path), options.trimPathComponents));
 };
 
 /**
 @param {string} source
-@param {int} trimPathComponents
+@param {int} shouldTrim
 */
-const trimPath = (source, trimPathComponents) => {
-	if (!trimPathComponents || trimPathComponents === 0) {
+const trimPathComponents = (source, shouldTrim) => {
+	if (!shouldTrim || shouldTrim === 0) {
 		return source;
 	}
 
 	const splitPath = path.normalize(source).split(path.sep);
-	if ((splitPath.length - 1) < trimPathComponents) {
-		throw new Error('cant go up that far');
+	if ((splitPath.length - 1) < shouldTrim) {
+		throw new CpyError(`The provided path \`${source}\` can only be reduced up to \`${splitPath.length}\` times.`);
 	}
 
-	const slicedPath = splitPath.slice(trimPathComponents);
+	const slicedPath = splitPath.slice(shouldTrim);
 	return slicedPath.length === 1 ? slicedPath[0] : path.join(slicedPath);
 };
 

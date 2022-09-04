@@ -57,6 +57,15 @@ export interface Options extends Readonly<GlobOptions>, CpFileOptions {
 	Trim path from files being copied.
 
 	@default 0
+
+	@example
+	```
+	import cpy from 'cpy';
+
+	await cpy('src/**\/*.js', 'destination/flatSourceFiles', {
+		trimPathComponents: 2
+	});
+	```
 	*/
 	readonly trimPathComponents?: number;
 

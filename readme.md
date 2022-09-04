@@ -88,15 +88,18 @@ Overwrite existing files.
 Type: `number`\
 Default: `0`
 
-Trim path from files being copied.
+Omits the specified amount of parent directories from files being copied.
 
 ```js
 import cpy from 'cpy';
 
-await cpy('src/**/*.js', 'destination', {
+await cpy('src/**/*.js', 'destination/flatSourceFiles', {
 	trimPathComponents: 2
 });
 ```
+
+Where the destination paths of `*.js` files within subdirectories of the `src` directory
+will be flattened to a reduced structure another `destination/flatSourceFiles` path.
 
 ##### flat
 

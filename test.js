@@ -450,7 +450,7 @@ test('returns destination path', async t => {
 	]);
 });
 
-test('trims path from files being copied', async t => {
+test('files being copied are copied with a flattened hierarchy', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'src'));
 	fs.mkdirSync(path.join(t.context.tmp, 'src/nested'));
