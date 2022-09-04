@@ -54,7 +54,7 @@ export interface Options extends Readonly<GlobOptions>, CpFileOptions {
 	readonly flat?: boolean;
 
 	/**
-	Trim path from files being copied.
+	Omits the specified amount of parent directories from files being copied.
 
 	@default 0
 
