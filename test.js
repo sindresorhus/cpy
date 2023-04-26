@@ -215,6 +215,25 @@ test('rename filenames using a function', async t => {
 	);
 });
 
+test('rename function receives the basename argument with the file extension', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'foo.js'), '');
+	fs.writeFileSync(path.join(t.context.tmp, 'foo.ts'), '');
+
+	const visited = [];
+	await cpy(['foo.js', 'foo.ts'], 'destination/subdir', {
+		cwd: t.context.tmp,
+		rename(basename) {
+			visited.push(basename);
+			return basename;
+		},
+	});
+
+	t.is(visited.length, 2);
+	t.true(visited.includes('foo.js'));
+	t.true(visited.includes('foo.ts'));
+});
+
 test('flatten directory tree', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'source'));
