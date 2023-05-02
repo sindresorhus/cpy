@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import pMap from 'p-map';
 import arrify from 'arrify';
-import cpFile from 'cp-file';
+import {copyFile} from 'cp-file';
 import pFilter from 'p-filter';
 import {isDynamicPattern} from 'globby';
 import micromatch from 'micromatch';
@@ -265,10 +265,7 @@ export default function cpy(
 				);
 
 				try {
-					await cpFile(entry.path, to, options).on(
-						'progress',
-						fileProgressHandler,
-					);
+					await copyFile(entry.path, to, {...options, onProgress: fileProgressHandler});
 				} catch (error) {
 					throw new CpyError(
 						`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`,

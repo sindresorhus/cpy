@@ -13,7 +13,7 @@
 	"type": "module",
 	"exports": "./index.js",
 	"engines": {
-		"node": "^12.20.0 || ^14.17.0 || >=16.0.0"
+		"node": ">=16"
 	},
 	"scripts": {
 		"test": "xo && ava && tsd"
@@ -47,21 +47,20 @@
 	],
 	"dependencies": {
 		"arrify": "^3.0.0",
-		"cp-file": "^9.1.0",
-		"globby": "^13.1.1",
-		"junk": "^4.0.0",
-		"micromatch": "^4.0.4",
-		"nested-error-stacks": "^2.1.0",
+		"cp-file": "^10.0.0",
+		"globby": "^13.1.4",
+		"junk": "^4.0.1",
+		"micromatch": "^4.0.5",
+		"nested-error-stacks": "^2.1.1",
 		"p-filter": "^3.0.0",
-		"p-map": "^5.3.0"
+		"p-map": "^6.0.0"
 	},
 	"devDependencies": {
-		"ava": "^4.0.1",
+		"ava": "^5.2.0",
 		"proxyquire": "^2.1.3",
-		"rimraf": "^3.0.2",
-		"tempy": "^2.0.0",
-		"tsd": "^0.19.1",
-		"typescript": "^4.5.5",
-		"xo": "^0.48.0"
+		"rimraf": "^5.0.0",
+		"tempy": "^3.0.0",
+		"tsd": "^0.28.1",
+		"xo": "^0.54.2"
 	}
 }

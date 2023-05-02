@@ -108,6 +108,7 @@ Filename or function returning a filename used to rename every file in `source`.
 import cpy from 'cpy';
 
 await cpy('foo.js', 'destination', {
+	// The `basename` is the filename with extension.
 	rename: basename => `prefix-${basename}`
 });
 

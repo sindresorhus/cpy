@@ -1,5 +1,5 @@
 import {expectType} from 'tsd';
-import cpy, {ProgressEmitter, ProgressData, Entry} from './index.js';
+import cpy, {type ProgressEmitter, type ProgressData, type Entry} from './index.js';
 
 expectType<Promise<string[]> & ProgressEmitter>(
 	cpy(['source/*.png', '!source/goat.png'], 'destination'),
@@ -8,6 +8,7 @@ expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {rename: 'foobar'}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(
+	// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 	cpy('foo.js', 'destination', {rename: basename => `prefix-${basename}`}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(

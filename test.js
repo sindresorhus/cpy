@@ -2,9 +2,9 @@ import process from 'node:process';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import rimraf from 'rimraf';
+import {rimrafSync} from 'rimraf';
 import test from 'ava';
-import tempy from 'tempy';
+import {temporaryFile, temporaryDirectory} from 'tempy';
 import proxyquire from 'proxyquire';
 import CpyError from './cpy-error.js';
 import cpy from './index.js';
@@ -18,13 +18,13 @@ const cpyMockedError = module => proxyquire('.', {
 });
 
 test.beforeEach(t => {
-	t.context.tmp = tempy.file();
-	t.context.dir = tempy.directory();
+	t.context.tmp = temporaryFile();
+	t.context.dir = temporaryDirectory();
 });
 
 test.afterEach(t => {
-	rimraf.sync(t.context.tmp);
-	rimraf.sync(t.context.dir);
+	rimrafSync(t.context.tmp);
+	rimrafSync(t.context.dir);
 });
 
 test('reject Errors on missing `source`', async t => {

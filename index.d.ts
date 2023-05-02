@@ -1,7 +1,7 @@
-import {Options as GlobOptions} from 'globby';
-import {Options as CpFileOptions} from 'cp-file';
+import {type Options as GlobOptions} from 'globby';
+import {type Options as CpFileOptions} from 'cp-file';
 
-export interface Entry {
+export type Entry = {
 	/**
 	Resolved path to the file.
 
@@ -36,9 +36,9 @@ export interface Entry {
 	@example 'js'
 	*/
 	readonly extension: string;
-}
+};
 
-export interface Options extends Readonly<GlobOptions>, CpFileOptions {
+export type Options = {
 	/**
 	Working directory to find source files.
 
@@ -61,6 +61,7 @@ export interface Options extends Readonly<GlobOptions>, CpFileOptions {
 	import cpy from 'cpy';
 
 	await cpy('foo.js', 'destination', {
+		// The `basename` is the filename with extension.
 		rename: basename => `prefix-${basename}`
 	});
 
@@ -102,9 +103,9 @@ export interface Options extends Readonly<GlobOptions>, CpFileOptions {
 	```
 	*/
 	readonly filter?: (file: Entry) => boolean | Promise<boolean>;
-}
+} & Readonly<GlobOptions> & CpFileOptions; // eslint-disable-line @typescript-eslint/no-redundant-type-constituents
 
-export interface ProgressData {
+export type ProgressData = {
 	/**
 	Copied file count.
 	*/
@@ -124,19 +125,19 @@ export interface ProgressData {
 	Completed percentage. A value between `0` and `1`.
 	*/
 	percent: number;
-}
+};
 
-export interface ProgressEmitter {
+export type ProgressEmitter = {
 	on(
 		event: 'progress',
 		handler: (progress: ProgressData) => void
 	): Promise<string[]>;
-}
+};
 
-export interface CopyStatus {
+export type CopyStatus = {
 	written: number;
 	percent: number;
-}
+};
 
 /**
 Copy files.
