@@ -118,15 +118,14 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 @param {string|Function} rename
 */
 const renameFile = (source, rename) => {
-	const filename = path.basename(source, path.extname(source));
-	const fileExtension = path.extname(source);
 	const directory = path.dirname(source);
 	if (typeof rename === 'string') {
 		return path.join(directory, rename);
 	}
 
 	if (typeof rename === 'function') {
-		return path.join(directory, `${rename(filename)}${fileExtension}`);
+		const filename = path.basename(source);
+		return path.join(directory, rename(filename));
 	}
 
 	return source;
