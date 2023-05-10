@@ -125,6 +125,16 @@ export type ProgressData = {
 	Completed percentage. A value between `0` and `1`.
 	*/
 	percent: number;
+
+	/**
+	The absolute source path of the current file being copied.
+	*/
+	sourcePath: string;
+
+	/**
+	The absolute destination path of the current file being copied.
+	*/
+	destinationPath: string;
 };
 
 export type ProgressEmitter = {
