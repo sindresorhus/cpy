@@ -248,6 +248,8 @@ export default function cpy(
 					percent: completedFiles / entries.length,
 					completedFiles,
 					completedSize,
+					sourcePath: event.sourcePath,
+					destinationPath: event.destinationPath,
 				});
 			}
 		};

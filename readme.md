@@ -201,12 +201,16 @@ Type: `Function`
 	completedFiles: number,
 	totalFiles: number,
 	completedSize: number,
-	percent: number
+	percent: number,
+	sourcePath: string,
+	destinationPath: string,
 }
 ```
 
 - `completedSize` is in bytes
 - `percent` is a value between `0` and `1`
+- `sourcePath` is the absolute path of the current source files being copied.
+- `destinationPath` is the absolute path of the current copied file in the destination directory. 
 
 Note that the `.on()` method is available only right after the initial `cpy` call, so make sure you add a `handler` before awaiting the promise:
 

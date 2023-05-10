@@ -50,5 +50,7 @@ expectType<Promise<string[]>>(
 		expectType<number>(progress.totalFiles);
 		expectType<number>(progress.completedSize);
 		expectType<number>(progress.percent);
+		expectType<string>(progress.sourcePath);
+		expectType<string>(progress.destinationPath);
 	}),
 );

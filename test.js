@@ -334,6 +334,8 @@ test('junk files are ignored', async t => {
 	t.is(report.completedFiles, 1);
 	t.is(report.completedSize, 11);
 	t.is(report.percent, 1);
+	t.is(read(report.sourcePath), read(t.context.tmp + '/cwd/foo'));
+	t.is(read(report.destinationPath), read(t.context.tmp + '/cwd/foo'));
 });
 
 test('junk files are copied', async t => {
@@ -356,6 +358,8 @@ test('junk files are copied', async t => {
 	t.is(report.completedFiles, 2);
 	t.is(report.completedSize, 22);
 	t.is(report.percent, 1);
+	t.is(read(report.sourcePath), read(t.context.tmp + '/cwd/foo'));
+	t.is(read(report.destinationPath), read(t.context.tmp + '/cwd/foo'));
 });
 
 test('nested junk files are ignored', async t => {
@@ -378,6 +382,8 @@ test('nested junk files are ignored', async t => {
 	t.is(report.completedFiles, 1);
 	t.is(report.completedSize, 11);
 	t.is(report.percent, 1);
+	t.is(read(report.sourcePath), read(t.context.tmp + '/cwd/test'));
+	t.is(read(report.destinationPath), read(t.context.tmp + '/test'));
 });
 
 test('reports copy progress of single file', async t => {
@@ -398,6 +404,8 @@ test('reports copy progress of single file', async t => {
 	t.is(report.completedFiles, 1);
 	t.is(report.completedSize, 11);
 	t.is(report.percent, 1);
+	t.is(read(report.sourcePath), read(t.context.tmp + '/cwd/foo'));
+	t.is(read(report.destinationPath), read(t.context.tmp + '/foo'));
 });
 
 test('reports copy progress of multiple files', async t => {
@@ -419,6 +427,8 @@ test('reports copy progress of multiple files', async t => {
 	t.is(report.completedFiles, 2);
 	t.is(report.completedSize, 25);
 	t.is(report.percent, 1);
+	t.is(read(report.sourcePath), read(t.context.tmp + '/cwd/bar'));
+	t.is(read(report.destinationPath), read(t.context.tmp + '/bar'));
 });
 
 test('reports correct completedSize', async t => {
@@ -443,6 +453,8 @@ test('reports correct completedSize', async t => {
 	t.is(report.totalFiles, 1);
 	t.is(report.completedFiles, 1);
 	t.is(report.completedSize, ONE_MEGABYTE);
+	t.is(read(report.sourcePath), read(t.context.tmp, 'cwd/fatfile'));
+	t.is(read(report.destinationPath), read(t.context.tmp, 'fatfile'));
 	t.true(chunkCount > 1);
 	t.is(report.percent, 1);
 });
