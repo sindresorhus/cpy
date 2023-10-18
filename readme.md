@@ -2,6 +2,8 @@
 
 > Copy files
 
+**IMPORTANT:** This package has a lot of problems and I unfortunately don't have time to fix them. I would recommend against using this package until these problems are resolved. Help welcome (see the issue tracker)!
+
 ## Why
 
 - Fast by using streams.
