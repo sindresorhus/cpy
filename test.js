@@ -287,9 +287,9 @@ test('flatten single file', async t => {
 
 // TODO: Enable again when ESM supports mocking.
 // eslint-disable-next-line ava/no-skip-test
-test.skip('cp-file errors are CpyErrors', async t => {
-	const cpy = cpyMockedError('cp-file');
-	await t.throwsAsync(cpy('license', t.context.dir), {message: /cp-file/, instanceOf: CpyError});
+test.skip('copy-file errors are CpyErrors', async t => {
+	const cpy = cpyMockedError('copy-file');
+	await t.throwsAsync(cpy('license', t.context.dir), {message: /copy-file/, instanceOf: CpyError});
 });
 
 test('throws on non-existing file', async t => {

@@ -3,15 +3,12 @@ import EventEmitter from 'node:events';
 import path from 'node:path';
 import os from 'node:os';
 import pMap from 'p-map';
-import arrify from 'arrify';
-import {copyFile} from 'cp-file';
+import {copyFile} from 'copy-file';
 import pFilter from 'p-filter';
 import {isDynamicPattern} from 'globby';
 import micromatch from 'micromatch';
 import CpyError from './cpy-error.js';
 import GlobPattern from './glob-pattern.js';
-
-const defaultConcurrency = (os.cpus().length || 1) * 2; // eslint-disable-line unicorn/explicit-length-check
 
 /**
 @type {import('./index').Options}
@@ -139,7 +136,7 @@ const renameFile = (source, rename) => {
 export default function cpy(
 	source,
 	destination,
-	{concurrency = defaultConcurrency, ...options} = {},
+	{concurrency = os.availableParallelism(), ...options} = {},
 ) {
 	/**
 	@type {Map<string, import('./index').CopyStatus>}
@@ -167,8 +164,8 @@ export default function cpy(
 		/**
 		@type {GlobPattern[]}
 		*/
-		let patterns = expandPatternsWithBraceExpansion(arrify(source))
-			.map(string => string.replace(/\\/g, '/'));
+		let patterns = expandPatternsWithBraceExpansion([source ?? []].flat())
+			.map(string => string.replaceAll('\\', '/'));
 		const sources = patterns.filter(item => !item.startsWith('!'));
 		const ignore = patterns.filter(item => item.startsWith('!'));
 
@@ -187,16 +184,11 @@ export default function cpy(
 			try {
 				matches = pattern.getMatches();
 			} catch (error) {
-				throw new CpyError(
-					`Cannot glob \`${pattern.originalPath}\`: ${error.message}`,
-					error,
-				);
+				throw new CpyError(`Cannot glob \`${pattern.originalPath}\`: ${error.message}`, {cause: error});
 			}
 
 			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath) && !isDynamicPattern(ignore)) {
-				throw new CpyError(
-					`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`,
-				);
+				throw new CpyError(`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`);
 			}
 
 			entries = [
@@ -219,7 +211,7 @@ export default function cpy(
 		}
 
 		/**
-		@param {import('cp-file').ProgressData} event
+		@param {import('copy-file').ProgressData} event
 		*/
 		const fileProgressHandler = event => {
 			const fileStatus = copyStatus.get(event.sourcePath) || {
@@ -269,10 +261,7 @@ export default function cpy(
 				try {
 					await copyFile(entry.path, to, {...options, onProgress: fileProgressHandler});
 				} catch (error) {
-					throw new CpyError(
-						`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`,
-						error,
-					);
+					throw new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`, {cause: error});
 				}
 
 				return to;

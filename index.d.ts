@@ -1,5 +1,5 @@
 import {type Options as GlobOptions} from 'globby';
-import {type Options as CpFileOptions} from 'cp-file';
+import {type Options as CopyFileOptions} from 'copy-file';
 
 export type Entry = {
 	/**
@@ -103,7 +103,7 @@ export type Options = {
 	```
 	*/
 	readonly filter?: (file: Entry) => boolean | Promise<boolean>;
-} & Readonly<GlobOptions> & CpFileOptions; // eslint-disable-line @typescript-eslint/no-redundant-type-constituents
+} & Readonly<GlobOptions> & CopyFileOptions;
 
 export type ProgressData = {
 	/**

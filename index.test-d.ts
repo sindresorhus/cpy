@@ -8,7 +8,7 @@ expectType<Promise<string[]> & ProgressEmitter>(
 	cpy('foo.js', 'destination', {rename: 'foobar'}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(
-	// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+
 	cpy('foo.js', 'destination', {rename: basename => `prefix-${basename}`}),
 );
 expectType<Promise<string[]> & ProgressEmitter>(

@@ -2,11 +2,11 @@
 
 > Copy files
 
-**IMPORTANT:** This package has a lot of problems and I unfortunately don't have time to fix them. I would recommend against using this package until these problems are resolved. Help welcome (see the issue tracker)!
+**IMPORTANT:** This package has a lot of problems and I unfortunately don't have time to fix them. I would recommend against using this package until these problems are resolved. Help welcome (see the issue tracker) 🙏
 
 ## Why
 
-- Fast by using streams.
+- Fast by [cloning](https://stackoverflow.com/questions/71629903/node-js-why-we-should-use-copyfile-ficlone-and-copyfile-ficlone-force-what-is) the files whenever possible.
 - Resilient by using [graceful-fs](https://github.com/isaacs/node-graceful-fs).
 - User-friendly by accepting [globs](https://github.com/sindresorhus/globby#globbing-patterns) and creating non-existent destination directories.
 - User-friendly error messages.
@@ -227,6 +227,6 @@ await cpy(source, destination).on('progress', progress => {
 ## Related
 
 - [cpy-cli](https://github.com/sindresorhus/cpy-cli) - CLI for this module
-- [cp-file](https://github.com/sindresorhus/cp-file) - Copy a single file
+- [copy-file](https://github.com/sindresorhus/copy-file) - Copy a single file
 - [move-file](https://github.com/sindresorhus/move-file) - Move a file
 - [make-dir](https://github.com/sindresorhus/make-dir) - Make a directory and its parents if needed
