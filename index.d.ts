@@ -145,7 +145,7 @@ export type ProgressEmitter = {
 };
 
 export type CopyStatus = {
-	written: number;
+	writtenBytes: number;
 	percent: number;
 };
 
