@@ -138,9 +138,6 @@ export default function cpy(
 	destination,
 	{concurrency = os.availableParallelism(), ...options} = {},
 ) {
-	/**
-	@type {Map<string, import('./index').CopyStatus>}
-	*/
 	const copyStatus = new Map();
 
 	/**

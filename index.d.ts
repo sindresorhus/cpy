@@ -144,11 +144,6 @@ export type ProgressEmitter = {
 	): Promise<string[]>;
 };
 
-export type CopyStatus = {
-	written: number;
-	percent: number;
-};
-
 /**
 Copy files.
 
