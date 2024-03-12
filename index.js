@@ -17,6 +17,7 @@ const defaultOptions = {
 	ignoreJunk: true,
 	flat: false,
 	cwd: process.cwd(),
+	trimPathComponents: 0,
 };
 
 class Entry {
@@ -86,7 +87,7 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 
 		return path.join(
 			destination,
-			path.relative(entry.pattern.normalizedPath, entry.path),
+			trimPathComponents(path.relative(entry.pattern.normalizedPath, entry.path), options.trimPathComponents),
 		);
 	}
 
@@ -107,7 +108,25 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath));
 	}
 
-	return path.join(options.cwd, destination, path.relative(options.cwd, entry.path));
+	return path.join(options.cwd, destination, trimPathComponents(path.relative(options.cwd, entry.path), options.trimPathComponents));
+};
+
+/**
+@param {string} source
+@param {int} shouldTrim
+*/
+const trimPathComponents = (source, shouldTrim) => {
+	if (!shouldTrim || shouldTrim === 0) {
+		return source;
+	}
+
+	const splitPath = path.normalize(source).split(path.sep);
+	if ((splitPath.length - 1) < shouldTrim) {
+		throw new CpyError(`The provided path \`${source}\` can only be reduced up to \`${splitPath.length}\` times.`);
+	}
+
+	const slicedPath = splitPath.slice(shouldTrim);
+	return slicedPath.length === 1 ? slicedPath[0] : path.join(slicedPath);
 };
 
 /**

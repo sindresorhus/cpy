@@ -54,6 +54,22 @@ export type Options = {
 	readonly flat?: boolean;
 
 	/**
+	Omits the specified amount of parent directories from files being copied.
+
+	@default 0
+
+	@example
+	```
+	import cpy from 'cpy';
+
+	await cpy('src/**\/*.js', 'destination/flatSourceFiles', {
+		trimPathComponents: 2
+	});
+	```
+	*/
+	readonly trimPathComponents?: number;
+
+	/**
 	Filename or function returning a filename used to rename every file in `source`.
 
 	@example
