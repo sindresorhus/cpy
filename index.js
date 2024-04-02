@@ -136,7 +136,7 @@ const renameFile = (source, rename) => {
 export default function cpy(
 	source,
 	destination,
-	{concurrency = os.availableParallelism(), ...options} = {},
+	{concurrency = os.availableParallelism?.() ?? os.cpus().length, ...options} = {},
 ) {
 	const copyStatus = new Map();
 
