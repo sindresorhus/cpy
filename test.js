@@ -462,7 +462,7 @@ test('reports correct completedSize', async t => {
 test('returns the event emitter on early rejection', t => {
 	const rejectedPromise = cpy(null, null);
 	t.is(typeof rejectedPromise.on, 'function');
-	rejectedPromise.catch(() => {});
+	rejectedPromise.catch(() => {}); // eslint-disable-line promise/prefer-await-to-then
 });
 
 test('returns destination path', async t => {

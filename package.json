@@ -51,19 +51,19 @@
 	],
 	"dependencies": {
 		"copy-file": "^11.0.0",
-		"globby": "^13.2.2",
+		"globby": "^14.0.2",
 		"junk": "^4.0.1",
-		"micromatch": "^4.0.5",
-		"p-filter": "^3.0.0",
-		"p-map": "^6.0.0"
+		"micromatch": "^4.0.7",
+		"p-filter": "^4.1.0",
+		"p-map": "^7.0.2"
 	},
 	"devDependencies": {
-		"ava": "^5.3.1",
+		"ava": "^6.1.3",
 		"proxyquire": "^2.1.3",
 		"rimraf": "^5.0.5",
 		"tempy": "^3.1.0",
-		"tsd": "^0.29.0",
-		"xo": "^0.56.0"
+		"tsd": "^0.31.1",
+		"xo": "^0.59.2"
 	},
 	"xo": {
 		"rules": {
