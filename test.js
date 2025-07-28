@@ -125,6 +125,24 @@ test('cwd', async t => {
 	);
 });
 
+test('cwd with glob', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'cwd/hello.js'),
+		'console.log("hello");',
+	);
+
+	await cpy(['*'], 'destination', {
+		cwd: path.join(t.context.tmp, 'cwd'),
+	});
+
+	t.is(
+		read(t.context.tmp, 'cwd/hello.js'),
+		read(t.context.tmp, 'cwd/destination/hello.js'),
+	);
+});
+
 test('do not overwrite', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.writeFileSync(path.join(t.context.tmp, 'license'), '');
@@ -480,3 +498,4 @@ test('returns destination path', async t => {
 		path.join(t.context.tmp, 'bar'),
 	]);
 });
+

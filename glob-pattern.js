@@ -39,7 +39,7 @@ export default class GlobPattern {
 			return path.isAbsolute(normalized) ? normalized : path.join(this.options.cwd, normalized);
 		}
 
-		return this.destination;
+		return this.options.cwd;
 	}
 
 	hasMagic() {
