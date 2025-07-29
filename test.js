@@ -499,3 +499,87 @@ test('returns destination path', async t => {
 	]);
 });
 
+test('absolute directory source paths', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.mkdirSync(path.join(t.context.tmp, 'out'));
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'source/hello.js'),
+		'console.log("hello");',
+	);
+
+	await cpy([path.join(t.context.tmp, 'source')], path.join(t.context.tmp, 'out'));
+
+	t.is(
+		read(t.context.tmp, 'source/hello.js'),
+		read(t.context.tmp, 'out/hello.js'),
+	);
+});
+
+test('absolute file source paths', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'out'));
+	fs.writeFileSync(
+		path.join(t.context.tmp, 'hello.js'),
+		'console.log("hello");',
+	);
+
+	await cpy([path.join(t.context.tmp, 'hello.js')], path.join(t.context.tmp, 'out'));
+
+	t.is(
+		read(t.context.tmp, 'hello.js'),
+		read(t.context.tmp, 'out/hello.js'),
+	);
+});
+
+test('negative patterns', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.mkdirSync(path.join(t.context.tmp, 'out'));
+	fs.writeFileSync(path.join(t.context.tmp, 'source/keep.js'), 'console.log("keep");');
+	fs.writeFileSync(path.join(t.context.tmp, 'source/ignore.js'), 'console.log("ignore");');
+	fs.writeFileSync(path.join(t.context.tmp, 'source/also-keep.txt'), 'keep this');
+
+	await cpy(['source/*', '!source/ignore.js'], path.join(t.context.tmp, 'out'), {
+		cwd: t.context.tmp,
+	});
+
+	t.is(
+		read(t.context.tmp, 'source/keep.js'),
+		read(t.context.tmp, 'out/keep.js'),
+	);
+	t.is(
+		read(t.context.tmp, 'source/also-keep.txt'),
+		read(t.context.tmp, 'out/also-keep.txt'),
+	);
+	t.false(fs.existsSync(path.join(t.context.tmp, 'out/ignore.js')));
+});
+
+test('recursive directory copying', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.mkdirSync(path.join(t.context.tmp, 'source/nested'));
+	fs.mkdirSync(path.join(t.context.tmp, 'source/nested/deep'));
+	fs.mkdirSync(path.join(t.context.tmp, 'out'));
+
+	fs.writeFileSync(path.join(t.context.tmp, 'source/file1.js'), 'console.log("file1");');
+	fs.writeFileSync(path.join(t.context.tmp, 'source/nested/file2.js'), 'console.log("file2");');
+	fs.writeFileSync(path.join(t.context.tmp, 'source/nested/deep/file3.js'), 'console.log("file3");');
+
+	await cpy(['source/**'], path.join(t.context.tmp, 'out'), {
+		cwd: t.context.tmp,
+	});
+
+	t.is(
+		read(t.context.tmp, 'source/file1.js'),
+		read(t.context.tmp, 'out/file1.js'),
+	);
+	t.is(
+		read(t.context.tmp, 'source/nested/file2.js'),
+		read(t.context.tmp, 'out/nested/file2.js'),
+	);
+	t.is(
+		read(t.context.tmp, 'source/nested/deep/file3.js'),
+		read(t.context.tmp, 'out/nested/deep/file3.js'),
+	);
+});
