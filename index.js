@@ -136,7 +136,7 @@ const renameFile = (source, rename) => {
 export default function cpy(
 	source,
 	destination,
-	{concurrency = os.availableParallelism(), ...options} = {},
+	{concurrency = os.availableParallelism(), ...options} = {}, // eslint-disable-line n/no-unsupported-features/node-builtins
 ) {
 	const copyStatus = new Map();
 

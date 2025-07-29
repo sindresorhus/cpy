@@ -53,8 +53,12 @@ test('copy array of files', async t => {
 });
 
 test('throws on invalid concurrency value', async t => {
-	await t.throwsAsync(cpy(['license', 'package.json'], t.context.tmp, {concurrency: -2}));
-	await t.throwsAsync(cpy(['license', 'package.json'], t.context.tmp, {concurrency: 'foo'}));
+	await t.throwsAsync(
+		cpy(['license', 'package.json'], t.context.tmp, {concurrency: -2}),
+	);
+	await t.throwsAsync(
+		cpy(['license', 'package.json'], t.context.tmp, {concurrency: 'foo'}),
+	);
 });
 
 test('copy array of files with filter', async t => {
@@ -311,7 +315,9 @@ test('flatten directory tree', async t => {
 		read(t.context.tmp, 'source/bar.js'),
 		read(t.context.tmp, 'destination/subdir/bar.js'),
 	);
-	t.falsy(fs.existsSync(path.join(t.context.tmp, 'destination/subdir/baz.ts')));
+	t.falsy(
+		fs.existsSync(path.join(t.context.tmp, 'destination/subdir/baz.ts')),
+	);
 });
 
 test('flatten single file', async t => {
