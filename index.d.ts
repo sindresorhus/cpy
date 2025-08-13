@@ -103,6 +103,22 @@ export type Options = {
 	```
 	*/
 	readonly filter?: (file: Entry) => boolean | Promise<boolean>;
+
+	/**
+	The given function is called whenever there is measurable progress.
+
+	@example
+	```
+	import cpy from 'cpy';
+
+	await cpy('foo', 'destination', {
+		onProgress: progress => {
+			// …
+		}
+	});
+	```
+	*/
+	readonly onProgress?: (progress: ProgressData) => void;
 } & Readonly<GlobOptions> & CopyFileOptions;
 
 export type ProgressData = {
@@ -138,6 +154,9 @@ export type ProgressData = {
 };
 
 export type ProgressEmitter = {
+	/**
+	@deprecated Use `onProgress` option instead.
+	*/
 	on(
 		event: 'progress',
 		handler: (progress: ProgressData) => void

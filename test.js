@@ -507,6 +507,82 @@ test('reports correct completedSize', async t => {
 	t.is(report.percent, 1);
 });
 
+test('reports copy progress of single file with onProgress option', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/foo'), 'lorem ipsum');
+
+	let report;
+
+	await cpy(['foo'], t.context.tmp, {
+		cwd: path.join(t.context.tmp, 'cwd'),
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 1);
+	t.is(report.completedFiles, 1);
+	t.is(report.completedSize, 11);
+	t.is(report.percent, 1);
+	t.is(read(report.sourcePath), read(t.context.tmp + '/cwd/foo'));
+	t.is(read(report.destinationPath), read(t.context.tmp + '/foo'));
+});
+
+test('reports copy progress of multiple files with onProgress option', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/foo'), 'lorem ipsum');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/bar'), 'dolor sit amet');
+
+	let report;
+
+	await cpy(['foo', 'bar'], t.context.tmp, {
+		cwd: path.join(t.context.tmp, 'cwd'),
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 2);
+	t.is(report.completedFiles, 2);
+	t.is(report.completedSize, 25);
+	t.is(report.percent, 1);
+	t.is(read(report.sourcePath), read(t.context.tmp + '/cwd/bar'));
+	t.is(read(report.destinationPath), read(t.context.tmp + '/bar'));
+});
+
+test('reports correct completedSize with onProgress option', async t => {
+	const ONE_MEGABYTE = (1 * 1024 * 1024) + 1;
+	const buf = crypto.randomBytes(ONE_MEGABYTE);
+
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/fatfile'), buf);
+
+	let report;
+	let chunkCount = 0;
+
+	await cpy(['fatfile'], t.context.tmp, {
+		cwd: path.join(t.context.tmp, 'cwd'),
+		onProgress(event) {
+			chunkCount++;
+			report = event;
+		},
+	});
+
+	t.not(report, undefined);
+	t.is(report.totalFiles, 1);
+	t.is(report.completedFiles, 1);
+	t.is(report.completedSize, ONE_MEGABYTE);
+	t.is(read(report.sourcePath), read(t.context.tmp, 'cwd/fatfile'));
+	t.is(read(report.destinationPath), read(t.context.tmp, 'fatfile'));
+	t.true(chunkCount > 1);
+	t.is(report.percent, 1);
+});
+
 test('returns the event emitter on early rejection', t => {
 	const rejectedPromise = cpy(null, null);
 	t.is(typeof rejectedPromise.on, 'function');

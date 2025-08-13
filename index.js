@@ -227,12 +227,18 @@ export default function cpy(
 		}
 
 		if (entries.length === 0) {
-			progressEmitter.emit('progress', {
+			const progressData = {
 				totalFiles: 0,
 				percent: 1,
 				completedFiles: 0,
 				completedSize: 0,
-			});
+			};
+
+			if (options.onProgress) {
+				options.onProgress(progressData);
+			}
+
+			progressEmitter.emit('progress', progressData);
 		}
 
 		/**
@@ -260,14 +266,20 @@ export default function cpy(
 					percent: event.percent,
 				});
 
-				progressEmitter.emit('progress', {
+				const progressData = {
 					totalFiles: entries.length,
 					percent: completedFiles / entries.length,
 					completedFiles,
 					completedSize,
 					sourcePath: event.sourcePath,
 					destinationPath: event.destinationPath,
-				});
+				};
+
+				if (options.onProgress) {
+					options.onProgress(progressData);
+				}
+
+				progressEmitter.emit('progress', progressData);
 			}
 		};
 
@@ -295,8 +307,8 @@ export default function cpy(
 		);
 	})();
 
-	promise.on = (...arguments_) => {
-		progressEmitter.on(...arguments_);
+	promise.on = (_eventName, callback) => {
+		progressEmitter.on(_eventName, callback);
 		return promise;
 	};
 

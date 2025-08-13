@@ -23,6 +23,21 @@ expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {
 }));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {filter: async (_file: Entry) => true}));
 
+expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {
+	onProgress(progress) {
+		expectType<ProgressData>(progress);
+
+		expectType<number>(progress.completedFiles);
+		expectType<number>(progress.totalFiles);
+		expectType<number>(progress.completedSize);
+		expectType<number>(progress.percent);
+		expectType<string>(progress.sourcePath);
+		expectType<string>(progress.destinationPath);
+	},
+}));
+
+// Test that deprecated .on still works but is deprecated
+// eslint-disable-next-line @typescript-eslint/no-deprecated
 expectType<Promise<string[]>>(cpy('foo.js', 'destination').on('progress', progress => {
 	expectType<ProgressData>(progress);
 

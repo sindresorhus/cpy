@@ -157,6 +157,22 @@ await cpy('foo', 'destination', {
 });
 ```
 
+##### onProgress
+
+Type: `Function`
+
+The given function is called whenever there is measurable progress.
+
+```js
+import cpy from 'cpy';
+
+await cpy('foo', 'destination', {
+	onProgress: progress => {
+		// …
+	}
+});
+```
+
 ##### Source file object
 
 ###### path
@@ -196,13 +212,19 @@ File extension.
 
 ## Progress reporting
 
-### cpy.on('progress', handler)
+The `onProgress` option provides progress information during file copying:
 
-#### handler(progress)
+```js
+import cpy from 'cpy';
 
-Type: `Function`
+await cpy(source, destination, {
+	onProgress: progress => {
+		console.log(`Progress: ${Math.round(progress.percent * 100)}%`);
+	}
+});
+```
 
-##### progress
+### Progress object
 
 ```js
 {
@@ -215,10 +237,16 @@ Type: `Function`
 }
 ```
 
-- `completedSize` is in bytes
-- `percent` is a value between `0` and `1`
-- `sourcePath` is the absolute source path of the current file being copied.
-- `destinationPath` is The absolute destination path of the current file being copied.
+- `completedFiles` - Number of files copied so far.
+- `totalFiles` - Total number of files to copy.
+- `completedSize` - Number of bytes copied so far.
+- `percent` - Progress percentage as a value between `0` and `1`.
+- `sourcePath` - Absolute source path of the current file being copied.
+- `destinationPath` - Absolute destination path of the current file being copied.
+
+#### handler(progress)
+
+Type: `Function`
 
 Note that the `.on()` method is available only right after the initial `cpy` call, so make sure you add a `handler` before awaiting the promise:
 
