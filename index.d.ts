@@ -123,32 +123,32 @@ export type Options = {
 
 export type ProgressData = {
 	/**
-	Copied file count.
+	Number of files copied so far.
 	*/
 	completedFiles: number;
 
 	/**
-	Overall file count.
+	Total number of files to copy.
 	*/
 	totalFiles: number;
 
 	/**
-	Completed size in bytes.
+	Number of bytes copied so far.
 	*/
 	completedSize: number;
 
 	/**
-	Completed percentage. A value between `0` and `1`.
+	Progress percentage as a value between `0` and `1`.
 	*/
 	percent: number;
 
 	/**
-	The absolute source path of the current file being copied.
+	Absolute source path of the current file being copied.
 	*/
 	sourcePath: string;
 
 	/**
-	The absolute destination path of the current file being copied.
+	Absolute destination path of the current file being copied.
 	*/
 	destinationPath: string;
 };
@@ -190,6 +190,13 @@ await cpy('node_modules/**\/*.json', 'destination');
 
 // Copy all png files into destination without keeping directory structure
 await cpy('**\/*.png', 'destination', {flat: true});
+
+// Progress reporting
+await cpy('source/**', 'destination', {
+	onProgress: progress => {
+		console.log(`Progress: ${Math.round(progress.percent * 100)}%`);
+	}
+});
 
 console.log('Files copied!');
 ```

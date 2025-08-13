@@ -150,7 +150,12 @@ const renameFile = (source, rename) => {
 
 	if (typeof rename === 'function') {
 		const filename = path.basename(source);
-		return path.join(directory, rename(filename));
+		const result = rename(filename);
+		if (typeof result !== 'string') {
+			throw new TypeError(`Rename function must return a string, got ${typeof result}`);
+		}
+
+		return path.join(directory, result);
 	}
 
 	return source;
@@ -232,6 +237,8 @@ export default function cpy(
 				percent: 1,
 				completedFiles: 0,
 				completedSize: 0,
+				sourcePath: '',
+				destinationPath: '',
 			};
 
 			if (options.onProgress) {
@@ -268,7 +275,7 @@ export default function cpy(
 
 				const progressData = {
 					totalFiles: entries.length,
-					percent: completedFiles / entries.length,
+					percent: entries.length === 0 ? 0 : completedFiles / entries.length,
 					completedFiles,
 					completedSize,
 					sourcePath: event.sourcePath,
