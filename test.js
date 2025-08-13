@@ -619,3 +619,70 @@ test('recursive directory copying', async t => {
 		read(t.context.tmp, 'out/nested/deep/file3.js'),
 	);
 });
+
+// #114 – absolute cwd + absolute destination must not self-copy or escape dest
+test('absolute cwd + absolute dest: preserves structure from cwd and never self-copies', async t => {
+	const root = temporaryDirectory();
+	const source = path.join(root, 'project', 'packages', 'pkg-name');
+	const dest = path.join(root, 'project', 'build', 'packages', 'pkg-name');
+
+	// Source tree
+	fs.mkdirSync(path.join(source, 'src', 'nested'), {recursive: true});
+	const fileA = path.join(source, 'src', 'example.ts');
+	const fileB = path.join(source, 'src', 'nested', 'deep.ts');
+	fs.writeFileSync(fileA, 'console.log("A");\n');
+	fs.writeFileSync(fileB, 'console.log("B");\n');
+
+	// Copy everything except tsx/tests/node_modules (like the issue)
+	const globs = [
+		'**/*',
+		'!**/node_modules/**',
+		'!**/*.test.*',
+		'!**/__snapshots__/**',
+		'!**/__fixtures__/**',
+		'!**/__mocks__/**',
+	];
+
+	await cpy(globs, dest, {cwd: source});
+
+	// Destination must contain files under dest (no `..` escapes)
+	const outA = path.join(dest, 'src', 'example.ts');
+	const outB = path.join(dest, 'src', 'nested', 'deep.ts');
+
+	t.true(fs.existsSync(outA));
+	t.true(fs.existsSync(outB));
+
+	// Ensure content intact (no truncation / self-copy)
+	t.is(fs.readFileSync(outA, 'utf8'), fs.readFileSync(fileA, 'utf8'));
+	t.is(fs.readFileSync(outB, 'utf8'), fs.readFileSync(fileB, 'utf8'));
+
+	// Sanity: every created file path starts with dest (no traversal)
+	const walk = dir => fs.readdirSync(dir, {withFileTypes: true}).flatMap(d => {
+		const p = path.join(dir, d.name);
+		return d.isDirectory() ? walk(p) : [p];
+	});
+	for (const p of walk(dest)) {
+		t.true(p.startsWith(dest));
+	}
+});
+
+// #114 – when glob parent and destination share ancestry, output still stays inside dest
+test('never joins a path that resolves back to the source (guards against data loss)', async t => {
+	const root = temporaryDirectory();
+	const repo = path.join(root, 'repo');
+	const source = path.join(repo, 'packages', 'alpha');
+	const dest = path.join(repo, 'build', 'packages', 'alpha');
+
+	fs.mkdirSync(path.join(source, 'dir'), {recursive: true});
+	const file = path.join(source, 'dir', 'file.txt');
+	fs.writeFileSync(file, 'x'.repeat(8192)); // Sizeable to catch truncation
+
+	await cpy(['**/*'], dest, {cwd: source});
+
+	const out = path.join(dest, 'dir', 'file.txt');
+	t.true(fs.existsSync(out));
+	t.is(fs.readFileSync(out, 'utf8'), fs.readFileSync(file, 'utf8'));
+
+	// Ensure destination is not the same as source path
+	t.not(path.resolve(out), path.resolve(file));
+});

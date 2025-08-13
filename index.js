@@ -84,10 +84,38 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 			return path.join(options.cwd, destination, entry.name);
 		}
 
-		return path.join(
-			destination,
-			path.relative(entry.pattern.normalizedPath, entry.path),
-		);
+		// Prefer glob-parent behavior to match existing semantics,
+		// but defend against self-copy / traversal (#114).
+		const from = path.resolve(entry.path);
+		const baseA = entry.pattern.normalizedPath; // Glob parent inside cwd
+		const baseB = options.cwd;
+
+		const relativize = base => {
+			const relativePath = path.relative(base, entry.path);
+			if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+				return;
+			}
+
+			return relativePath;
+		};
+
+		const relativePath = relativize(baseA) ?? relativize(baseB) ?? path.basename(entry.path);
+		let toPath = path.join(destination, relativePath);
+
+		// Guard: never copy a file into itself (can truncate under concurrency).
+		if (path.resolve(toPath) === from) {
+			const alternativeRelativePath = relativize(baseB);
+
+			const alternativeToPath = alternativeRelativePath
+				? path.join(destination, alternativeRelativePath)
+				: path.join(destination, path.basename(entry.path));
+
+			toPath = path.resolve(alternativeToPath) === from
+				? path.join(destination, path.basename(entry.path))
+				: alternativeToPath;
+		}
+
+		return toPath;
 	}
 
 	if (path.isAbsolute(destination)) {
