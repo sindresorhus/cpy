@@ -881,3 +881,24 @@ test('glob with ../ and flat option', async t => {
 	t.is(read(t.context.tmp, 'file1.js'), read(t.context.tmp, 'nested/output/file1.js'));
 	t.is(read(t.context.tmp, 'file2.js'), read(t.context.tmp, 'nested/output/file2.js'));
 });
+
+test('relative source outside cwd to relative destination', async t => {
+	const testRoot = temporaryDirectory();
+
+	fs.mkdirSync(path.join(testRoot, 'cwd'), {recursive: true});
+	fs.mkdirSync(path.join(testRoot, 'src/a/b'), {recursive: true});
+	fs.writeFileSync(path.join(testRoot, 'src/a/b/foo.txt'), 'test content');
+
+	try {
+		await cpy(['../src/a/b/foo.txt'], '../dest', {
+			cwd: path.join(testRoot, 'cwd'),
+		});
+
+		t.true(fs.existsSync(path.join(testRoot, 'dest/foo.txt')));
+		t.is(read(testRoot, 'dest/foo.txt'), 'test content');
+
+		t.true(fs.existsSync(path.join(testRoot, 'src/a/b/foo.txt')));
+	} finally {
+		rimrafSync(testRoot);
+	}
+});
