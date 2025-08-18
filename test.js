@@ -756,3 +756,128 @@ test('never joins a path that resolves back to the source (guards against data l
 	// Ensure destination is not the same as source path
 	t.not(path.resolve(out), path.resolve(file));
 });
+
+test('deeply nested ../ in source and dest', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'a/b/c/d/e/f'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'a/b/target.txt'), 'target');
+
+	await cpy(['../../../../target.txt'], '../../../../output', {cwd: path.join(t.context.tmp, 'a/b/c/d/e/f')});
+
+	t.is(read(t.context.tmp, 'a/b/target.txt'), read(t.context.tmp, 'a/b/output/target.txt'));
+});
+
+test('mixed ../ and ./ in paths', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'src/sub'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'file.txt'), 'content');
+
+	await cpy(['../../file.txt'], '.././../output', {cwd: path.join(t.context.tmp, 'src/sub')});
+
+	t.is(read(t.context.tmp, 'file.txt'), read(t.context.tmp, 'output/file.txt'));
+});
+
+test('redundant path segments', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'nested/file.txt'), 'content');
+
+	const results = await cpy(['./nested/../nested/file.txt'], './output', {cwd: t.context.tmp});
+
+	t.is(results.length, 1);
+	t.true(fs.existsSync(results[0]));
+	t.is(fs.readFileSync(results[0], 'utf8'), 'content');
+});
+
+test('empty path segments', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'file.txt'), 'content');
+
+	await cpy(['./file.txt'], 'output//subdir', {cwd: t.context.tmp});
+
+	t.is(read(t.context.tmp, 'file.txt'), read(t.context.tmp, 'output/subdir/file.txt'));
+});
+
+test('current directory references', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'file.txt'), 'content');
+
+	await cpy(['./././file.txt'], './././output', {cwd: t.context.tmp});
+
+	t.is(read(t.context.tmp, 'file.txt'), read(t.context.tmp, 'output/file.txt'));
+});
+
+test('source outside cwd with absolute destination', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'nested/deep'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'file.txt'), 'content');
+
+	const absoluteDest = path.join(t.context.tmp, 'absolute-output');
+	await cpy(['../../file.txt'], absoluteDest, {cwd: path.join(t.context.tmp, 'nested/deep')});
+
+	t.is(read(t.context.tmp, 'file.txt'), read(t.context.tmp, 'absolute-output/file.txt'));
+});
+
+test('source and dest both with trailing slashes', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'nested/file.txt'), 'content');
+
+	await cpy(['../nested/file.txt'], '../output/', {cwd: path.join(t.context.tmp, 'nested')});
+
+	t.is(read(t.context.tmp, 'nested/file.txt'), read(t.context.tmp, 'output/file.txt'));
+});
+
+test('both source and dest with ../ paths', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'nested/deep'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'nested/file.txt'), 'content');
+
+	await cpy(['../file.txt'], '../output', {cwd: path.join(t.context.tmp, 'nested/deep')});
+
+	t.is(read(t.context.tmp, 'nested/file.txt'), read(t.context.tmp, 'nested/output/file.txt'));
+	t.true(fs.existsSync(path.join(t.context.tmp, 'nested/output/file.txt')));
+});
+
+test('multiple ../ in both source and dest', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'a/b/c/d'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'a/b/target.txt'), 'target');
+
+	await cpy(['../../target.txt'], '../../output', {cwd: path.join(t.context.tmp, 'a/b/c/d')});
+
+	t.is(read(t.context.tmp, 'a/b/target.txt'), read(t.context.tmp, 'a/b/output/target.txt'));
+	t.true(fs.existsSync(path.join(t.context.tmp, 'a/b/output/target.txt')));
+});
+
+test('source with ./ prefix and ../ destination', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'nested/file.txt'), 'content');
+
+	await cpy(['./file.txt'], '../output', {cwd: path.join(t.context.tmp, 'nested')});
+
+	t.is(read(t.context.tmp, 'nested/file.txt'), read(t.context.tmp, 'output/file.txt'));
+});
+
+test('absolute source with relative destination', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'file.txt'), 'content');
+
+	await cpy([path.join(t.context.tmp, 'file.txt')], '../output', {cwd: path.join(t.context.tmp, 'nested')});
+
+	t.is(read(t.context.tmp, 'file.txt'), read(t.context.tmp, 'output/file.txt'));
+});
+
+test('glob with ../ and flat option', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'nested/deep'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'file1.js'), 'js1');
+	fs.writeFileSync(path.join(t.context.tmp, 'file2.js'), 'js2');
+
+	await cpy(['../../*.js'], '../output', {cwd: path.join(t.context.tmp, 'nested/deep'), flat: true});
+
+	t.is(read(t.context.tmp, 'file1.js'), read(t.context.tmp, 'nested/output/file1.js'));
+	t.is(read(t.context.tmp, 'file2.js'), read(t.context.tmp, 'nested/output/file2.js'));
+});

@@ -10,7 +10,7 @@ export default class GlobPattern {
 	@param {import('.').Options} options
 	*/
 	constructor(pattern, destination, options) {
-		this.path = pattern;
+		this.path = path.normalize(pattern);
 		this.originalPath = pattern;
 		this.destination = destination;
 		this.options = options;
