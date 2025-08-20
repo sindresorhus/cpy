@@ -135,6 +135,10 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath));
 	}
 
+	if (!entry.pattern.isDirectory && path.relative(options.cwd, entry.path).startsWith('..')) {
+		return path.join(path.resolve(options.cwd, destination), entry.name);
+	}
+
 	return path.join(options.cwd, destination, path.relative(options.cwd, entry.path));
 };
 

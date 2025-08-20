@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "node",
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true
+	},
+	"include": [
+		"index.d.ts",
+		"index.test-d.ts"
+	]
+}
