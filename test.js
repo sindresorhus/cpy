@@ -175,6 +175,16 @@ test('cwd with glob ./*', async t => {
 	);
 });
 
+test('glob with redundant parent segments in pattern is normalized', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'src/nested'), {recursive: true});
+	fs.writeFileSync(path.join(t.context.tmp, 'src/nested/file.js'), 'x');
+
+	await cpy(['src/../src/**/*.js'], 'out', {cwd: t.context.tmp});
+
+	t.true(fs.existsSync(path.join(t.context.tmp, 'out/nested/file.js')));
+});
+
 test('do not overwrite', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.writeFileSync(path.join(t.context.tmp, 'license'), '');
@@ -214,6 +224,22 @@ test('path structure', async t => {
 	);
 });
 
+test('directory source outside cwd preserves structure under destination', async t => {
+	const root = temporaryDirectory();
+	const cwd = path.join(root, 'cwd');
+	const src = path.join(root, 'src');
+	const out = path.join(cwd, 'out');
+	fs.mkdirSync(path.join(src, 'nested'), {recursive: true});
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.writeFileSync(path.join(src, 'a.txt'), 'A');
+	fs.writeFileSync(path.join(src, 'nested', 'b.txt'), 'B');
+
+	await cpy(['../src'], 'out', {cwd});
+
+	t.is(read(src, 'a.txt'), read(out, 'src/a.txt'));
+	t.is(read(src, 'nested/b.txt'), read(out, 'src/nested/b.txt'));
+});
+
 test('rename filenames but not filepaths', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'source'));
@@ -238,6 +264,66 @@ test('rename filenames but not filepaths', async t => {
 	t.is(
 		read(t.context.tmp, 'source/hello.js'),
 		read(t.context.tmp, 'destination/subdir/source/hi.js'),
+	);
+});
+
+test('rename string: rejects path separators and traversal', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'a.js'), 'A');
+
+	await t.throwsAsync(
+		cpy(['a.js'], 'out', {cwd: t.context.tmp, rename: '../evil.js'}),
+		{instanceOf: TypeError, message: /must not contain path separators|filename/},
+	);
+
+	await t.throwsAsync(
+		cpy(['a.js'], 'out', {cwd: t.context.tmp, rename: 'dir/evil.js'}),
+		{instanceOf: TypeError, message: /must not contain path separators|filename/},
+	);
+});
+
+test('rename: rejects empty and dot names', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'a.js'), 'A');
+
+	await t.throwsAsync(
+		cpy(['a.js'], 'out', {cwd: t.context.tmp, rename: ''}),
+		{instanceOf: TypeError, message: /valid filename/},
+	);
+
+	await t.throwsAsync(
+		cpy(['a.js'], 'out', {cwd: t.context.tmp, rename: '.'}),
+		{instanceOf: TypeError, message: /valid filename/},
+	);
+
+	await t.throwsAsync(
+		cpy(['a.js'], 'out', {cwd: t.context.tmp, rename: '..'}),
+		{instanceOf: TypeError, message: /valid filename/},
+	);
+});
+
+test('rename function: rejects path separators and traversal', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'a.js'), 'A');
+
+	await t.throwsAsync(
+		cpy(['a.js'], 'out', {cwd: t.context.tmp, rename: () => '../evil.js'}),
+		{instanceOf: TypeError, message: /must not contain path separators|filename/},
+	);
+
+	await t.throwsAsync(
+		cpy(['a.js'], 'out', {cwd: t.context.tmp, rename: () => 'dir/evil.js'}),
+		{instanceOf: TypeError, message: /must not contain path separators|filename/},
+	);
+});
+
+test('rename function: rejects non-string return values', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'a.js'), 'A');
+
+	await t.throwsAsync(
+		cpy(['a.js'], 'out', {cwd: t.context.tmp, rename: () => 42}),
+		{instanceOf: TypeError, message: /must return a string/},
 	);
 });
 
@@ -333,6 +419,19 @@ test('flatten single file', async t => {
 	);
 });
 
+test('pattern with Windows-style backslashes is normalized', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.writeFileSync(path.join(t.context.tmp, 'source', 'hello.js'), 'console.log("hello");');
+
+	await cpy([String.raw`source\hello.js`], 'dest', {cwd: t.context.tmp});
+
+	t.is(
+		read(t.context.tmp, 'source/hello.js'),
+		read(t.context.tmp, 'dest/source/hello.js'),
+	);
+});
+
 // TODO: Enable again when ESM supports mocking.
 // eslint-disable-next-line ava/no-skip-test
 test.skip('copy-file errors are CpyErrors', async t => {
@@ -413,8 +512,8 @@ test('junk files are copied', async t => {
 test('nested junk files are ignored', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'cwd'));
-	fs.writeFileSync(path.join(t.context.tmp, 'cwd/Thumbs.db'), 'lorem ispum');
-	fs.writeFileSync(path.join(t.context.tmp, 'cwd/test'), 'lorem ispum');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/Thumbs.db'), 'lorem ipsum');
+	fs.writeFileSync(path.join(t.context.tmp, 'cwd/test'), 'lorem ipsum');
 
 	let report;
 
@@ -818,6 +917,39 @@ test('source outside cwd with absolute destination', async t => {
 	t.is(read(t.context.tmp, 'file.txt'), read(t.context.tmp, 'absolute-output/file.txt'));
 });
 
+test('non-glob single file: refuse self-copy when destination resolves to source directory', async t => {
+	// Arrange a file outside cwd and a destination that resolves to that same directory
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'nested'), {recursive: true});
+	const outsideFile = path.join(t.context.tmp, 'file.txt');
+	fs.writeFileSync(outsideFile, 'self-copy-guard');
+
+	const cwd = path.join(t.context.tmp, 'nested');
+
+	// Act + Assert
+	await t.throwsAsync(
+		cpy(['../file.txt'], '../', {cwd}),
+		{instanceOf: CpyError, message: /Refusing to copy to itself/},
+	);
+
+	// Ensure content intact
+	t.is(fs.readFileSync(outsideFile, 'utf8'), 'self-copy-guard');
+});
+
+test('non-glob single file inside cwd: refuse self-copy when destination is current directory', async t => {
+	fs.mkdirSync(t.context.tmp);
+	const cwd = t.context.tmp;
+	const src = path.join(cwd, 'same.txt');
+	fs.writeFileSync(src, 'same');
+
+	await t.throwsAsync(
+		cpy(['same.txt'], '.', {cwd}),
+		{instanceOf: CpyError, message: /Refusing to copy to itself/},
+	);
+
+	t.is(fs.readFileSync(src, 'utf8'), 'same');
+});
+
 test('source and dest both with trailing slashes', async t => {
 	fs.mkdirSync(t.context.tmp);
 	fs.mkdirSync(path.join(t.context.tmp, 'nested'), {recursive: true});
@@ -901,4 +1033,22 @@ test('relative source outside cwd to relative destination', async t => {
 	} finally {
 		rimrafSync(testRoot);
 	}
+});
+
+test('glob with flat and absolute destination', async t => {
+	fs.mkdirSync(t.context.tmp);
+	const cwd = path.join(t.context.tmp, 'proj');
+	const absDest = path.join(t.context.tmp, 'abs-out');
+
+	fs.mkdirSync(path.join(cwd, 'src', 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(cwd, 'a.js'), 'A');
+	fs.writeFileSync(path.join(cwd, 'src', 'b.js'), 'B');
+	fs.writeFileSync(path.join(cwd, 'src', 'nested', 'c.ts'), 'C');
+
+	await cpy('**/*.js', absDest, {cwd, flat: true});
+
+	// Only files, flattened; retains extensions; ignores directories
+	t.true(fs.existsSync(path.join(absDest, 'a.js')));
+	t.true(fs.existsSync(path.join(absDest, 'b.js')));
+	t.false(fs.existsSync(path.join(absDest, 'c.ts')));
 });

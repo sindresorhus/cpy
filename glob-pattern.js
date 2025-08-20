@@ -10,7 +10,10 @@ export default class GlobPattern {
 	@param {import('.').Options} options
 	*/
 	constructor(pattern, destination, options) {
-		this.path = path.normalize(pattern);
+		const normalized = path.normalize(pattern);
+		// Force POSIX-style separators for globby compatibility across platforms
+		const posixNormalized = normalized.split(path.sep).join('/');
+		this.path = posixNormalized;
 		this.originalPath = pattern;
 		this.destination = destination;
 		this.options = options;
@@ -18,11 +21,13 @@ export default class GlobPattern {
 
 		if (
 			!isDynamicPattern(pattern)
-			&& fs.existsSync(pattern)
-			&& fs.lstatSync(pattern).isDirectory()
 		) {
-			this.path = [pattern, '**'].join('/');
-			this.isDirectory = true;
+			const resolved = path.resolve(options.cwd, pattern);
+			if (fs.existsSync(resolved) && fs.lstatSync(resolved).isDirectory()) {
+				const directoryPosix = path.normalize(pattern).split(path.sep).join('/');
+				this.path = [directoryPosix, '**'].join('/');
+				this.isDirectory = true;
+			}
 		}
 	}
 
@@ -36,7 +41,9 @@ export default class GlobPattern {
 		const normalized = segments.slice(0, magicIndex).join('/');
 
 		if (normalized) {
-			return path.isAbsolute(normalized) ? normalized : path.join(this.options.cwd, normalized);
+			return path.isAbsolute(normalized)
+				? path.normalize(normalized)
+				: path.normalize(path.join(this.options.cwd, normalized));
 		}
 
 		return this.options.cwd;

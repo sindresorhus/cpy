@@ -74,57 +74,66 @@ const expandPatternsWithBraceExpansion = patterns => patterns.flatMap(pattern =>
 @param {string} props.destination
 @returns {string}
 */
-const preprocessDestinationPath = ({entry, destination, options}) => {
-	if (entry.pattern.hasMagic()) {
-		if (options.flat) {
-			if (path.isAbsolute(destination)) {
-				return path.join(destination, entry.name);
-			}
+const isSelfCopy = (from, to) => path.resolve(to) === path.resolve(from);
 
-			return path.join(options.cwd, destination, entry.name);
-		}
-
-		// Prefer glob-parent behavior to match existing semantics,
-		// but defend against self-copy / traversal (#114).
-		const from = path.resolve(entry.path);
-		const baseA = entry.pattern.normalizedPath; // Glob parent inside cwd
-		const baseB = options.cwd;
-
-		const relativize = base => {
-			const relativePath = path.relative(base, entry.path);
-			if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
-				return;
-			}
-
-			return relativePath;
-		};
-
-		const relativePath = relativize(baseA) ?? relativize(baseB) ?? path.basename(entry.path);
-		let toPath = path.join(destination, relativePath);
-
-		// Guard: never copy a file into itself (can truncate under concurrency).
-		if (path.resolve(toPath) === from) {
-			const alternativeRelativePath = relativize(baseB);
-
-			const alternativeToPath = alternativeRelativePath
-				? path.join(destination, alternativeRelativePath)
-				: path.join(destination, path.basename(entry.path));
-
-			toPath = path.resolve(alternativeToPath) === from
-				? path.join(destination, path.basename(entry.path))
-				: alternativeToPath;
-		}
-
-		return toPath;
+const ensureNotSelfCopy = (from, to) => {
+	if (isSelfCopy(from, to)) {
+		throw new CpyError(`Refusing to copy to itself: \`${from}\``);
 	}
 
+	return to;
+};
+
+const relativizeWithin = (base, file) => {
+	const relativePath = path.relative(base, file);
+	if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+		return;
+	}
+
+	return relativePath;
+};
+
+const computeToForGlob = ({entry, destination, options}) => {
+	if (options.flat) {
+		return path.isAbsolute(destination)
+			? path.join(destination, entry.name)
+			: path.join(options.cwd, destination, entry.name);
+	}
+
+	// Prefer glob-parent behavior to match existing semantics,
+	// but defend against self-copy / traversal (#114).
+	const from = path.resolve(entry.path);
+	const baseA = entry.pattern.normalizedPath; // Glob parent inside cwd
+	const baseB = options.cwd;
+	const relativePath = relativizeWithin(baseA, entry.path) ?? relativizeWithin(baseB, entry.path) ?? path.basename(entry.path);
+	let toPath = path.join(destination, relativePath);
+
+	// Guard: never copy a file into itself (can truncate under concurrency).
+	if (isSelfCopy(from, toPath)) {
+		const alternativeRelativePath = relativizeWithin(baseB, entry.path);
+		const alternativeToPath = alternativeRelativePath
+			? path.join(destination, alternativeRelativePath)
+			: path.join(destination, path.basename(entry.path));
+
+		toPath = isSelfCopy(from, alternativeToPath)
+			? path.join(destination, path.basename(entry.path))
+			: alternativeToPath;
+	}
+
+	return toPath;
+};
+
+const computeToForNonGlob = ({entry, destination, options}) => {
 	if (path.isAbsolute(destination)) {
-		return path.join(destination, entry.name);
+		return ensureNotSelfCopy(entry.path, path.join(destination, entry.name));
 	}
+
+	const insideCwd = !path.relative(options.cwd, entry.path).startsWith('..');
 
 	// TODO: This check will not work correctly if `options.cwd` and `entry.path` are on different partitions on Windows, see: https://github.com/sindresorhus/import-local/pull/12
-	if (entry.pattern.isDirectory && path.relative(options.cwd, entry.path).startsWith('..')) {
-		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath), path.relative(entry.pattern.originalPath, entry.path));
+	if (entry.pattern.isDirectory && !insideCwd) {
+		const originalDir = path.resolve(options.cwd, entry.pattern.originalPath);
+		return path.join(options.cwd, destination, path.basename(originalDir), path.relative(originalDir, entry.path));
 	}
 
 	if (!entry.pattern.isDirectory && entry.path === entry.relativePath) {
@@ -135,12 +144,18 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath));
 	}
 
-	if (!entry.pattern.isDirectory && path.relative(options.cwd, entry.path).startsWith('..')) {
-		return path.join(path.resolve(options.cwd, destination), entry.name);
+	if (!entry.pattern.isDirectory && !insideCwd) {
+		return ensureNotSelfCopy(entry.path, path.join(path.resolve(options.cwd, destination), entry.name));
 	}
 
-	return path.join(options.cwd, destination, path.relative(options.cwd, entry.path));
+	return ensureNotSelfCopy(entry.path, path.join(options.cwd, destination, path.relative(options.cwd, entry.path)));
 };
+
+const preprocessDestinationPath = ({entry, destination, options}) => (
+	entry.pattern.hasMagic()
+		? computeToForGlob({entry, destination, options})
+		: computeToForNonGlob({entry, destination, options})
+);
 
 /**
 @param {string} source
@@ -148,8 +163,30 @@ const preprocessDestinationPath = ({entry, destination, options}) => {
 */
 const renameFile = (source, rename) => {
 	const directory = path.dirname(source);
+
+	const assertSafeBasename = name => {
+		if (typeof name !== 'string') {
+			throw new TypeError(`Rename value must be a string, got ${typeof name}`);
+		}
+
+		// Disallow any path separators and traversal
+		if (name.includes('/') || name.includes('\\')) {
+			throw new TypeError('Rename must not contain path separators');
+		}
+
+		if (name === '' || name === '.' || name === '..') {
+			throw new TypeError('Rename must be a valid filename');
+		}
+
+		if (path.basename(name) !== name) {
+			throw new TypeError('Rename must be a filename, not a path');
+		}
+
+		return name;
+	};
+
 	if (typeof rename === 'string') {
-		return path.join(directory, rename);
+		return path.join(directory, assertSafeBasename(rename));
 	}
 
 	if (typeof rename === 'function') {
@@ -159,7 +196,7 @@ const renameFile = (source, rename) => {
 			throw new TypeError(`Rename function must return a string, got ${typeof result}`);
 		}
 
-		return path.join(directory, result);
+		return path.join(directory, assertSafeBasename(result));
 	}
 
 	return source;
