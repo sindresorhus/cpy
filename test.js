@@ -574,8 +574,13 @@ test('reports copy progress of multiple files', async t => {
 	t.is(report.completedFiles, 2);
 	t.is(report.completedSize, 25);
 	t.is(report.percent, 1);
-	t.is(read(report.sourcePath), read(t.context.tmp + '/cwd/bar'));
-	t.is(read(report.destinationPath), read(t.context.tmp + '/bar'));
+	// Final progress event may correspond to any file due to concurrency; don't assume order
+	const finalSourceBase = path.basename(report.sourcePath);
+	const finalDestBase = path.basename(report.destinationPath);
+	t.true(['foo', 'bar'].includes(finalSourceBase));
+	t.is(finalSourceBase, finalDestBase);
+	// Verify content equality between reported source and destination
+	t.is(read(report.destinationPath), read(report.sourcePath));
 });
 
 test('reports correct completedSize', async t => {
