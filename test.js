@@ -820,6 +820,34 @@ test('recursive directory copying', async t => {
 	);
 });
 
+// #10 – **/* pattern should not throw EISDIR when matching directories
+test('glob **/* excludes directories and copies only files', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'assets'));
+	fs.mkdirSync(path.join(t.context.tmp, 'assets/nested'));
+	fs.mkdirSync(path.join(t.context.tmp, 'assets/empty'));
+	fs.mkdirSync(path.join(t.context.tmp, 'output'));
+
+	fs.writeFileSync(path.join(t.context.tmp, 'assets/file1.txt'), 'content1');
+	fs.writeFileSync(path.join(t.context.tmp, 'assets/nested/file2.txt'), 'content2');
+
+	await t.notThrowsAsync(cpy(['**/*'], path.join(t.context.tmp, 'output'), {
+		cwd: path.join(t.context.tmp, 'assets'),
+	}));
+
+	t.is(
+		read(t.context.tmp, 'assets/file1.txt'),
+		read(t.context.tmp, 'output/file1.txt'),
+	);
+	t.is(
+		read(t.context.tmp, 'assets/nested/file2.txt'),
+		read(t.context.tmp, 'output/nested/file2.txt'),
+	);
+
+	// Empty directories should not be created
+	t.false(fs.existsSync(path.join(t.context.tmp, 'output/empty')));
+});
+
 // #114 – absolute cwd + absolute destination must not self-copy or escape dest
 test('absolute cwd + absolute dest: preserves structure from cwd and never self-copies', async t => {
 	const root = temporaryDirectory();
