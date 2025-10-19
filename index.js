@@ -68,11 +68,9 @@ const expandPatternsWithBraceExpansion = patterns => patterns.flatMap(pattern =>
 ));
 
 /**
-@param {object} props
-@param {Entry} props.entry
-@param {import('./index').Options}
-@param {string} props.destination
-@returns {string}
+@param {string} from - Source path
+@param {string} to - Destination path
+@returns {boolean}
 */
 const isSelfCopy = (from, to) => path.resolve(to) === path.resolve(from);
 

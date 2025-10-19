@@ -370,9 +370,8 @@ test('rename function receives the basename argument with the file extension', a
 	t.true(visited.includes('foo.ts'));
 });
 
-test('rename at the same directory', async t => {
+test('rename file in same directory', async t => {
 	fs.mkdirSync(t.context.tmp);
-	fs.mkdirSync(path.join(t.context.tmp, 'dest'));
 	fs.writeFileSync(path.join(t.context.tmp, 'hello.js'), 'console.log("hello");');
 
 	await cpy(['hello.js'], './', {
@@ -381,6 +380,20 @@ test('rename at the same directory', async t => {
 	});
 
 	t.is(read(t.context.tmp, 'file-renamed.js'), 'console.log("hello");');
+	t.is(read(t.context.tmp, 'hello.js'), 'console.log("hello");');
+});
+
+test('rename file in same directory using function', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'hello.js'), 'console.log("hello");');
+
+	await cpy(['hello.js'], './', {
+		cwd: t.context.tmp,
+		rename: basename => `prefix-${basename}`,
+	});
+
+	t.is(read(t.context.tmp, 'prefix-hello.js'), 'console.log("hello");');
+	t.is(read(t.context.tmp, 'hello.js'), 'console.log("hello");');
 });
 
 test('flatten directory tree', async t => {
