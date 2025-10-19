@@ -173,6 +173,12 @@ await cpy('foo', 'destination', {
 });
 ```
 
+##### signal
+
+Type: [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal)
+
+Abort signal to cancel the copy operation.
+
 ##### Source file object
 
 ###### path

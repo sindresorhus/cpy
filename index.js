@@ -214,7 +214,49 @@ export default function cpy(
 		...options,
 	};
 
+	/**
+	@param {GlobPattern[]} patterns
+	@param {string[]} ignorePatterns
+	@returns {Promise<Entry[]>}
+	*/
+	const getEntries = async (patterns, ignorePatterns) => {
+		let entries = [];
+
+		for (const pattern of patterns) {
+			/**
+			@type {string[]}
+			*/
+			let matches = [];
+
+			try {
+				matches = pattern.getMatches();
+			} catch (error) {
+				options.signal?.throwIfAborted();
+				throw new CpyError(`Cannot glob \`${pattern.originalPath}\`: ${error.message}`, {cause: error});
+			}
+
+			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath) && !isDynamicPattern(ignorePatterns)) {
+				throw new CpyError(`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`);
+			}
+
+			for (const sourcePath of matches) {
+				entries.push(new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern));
+			}
+		}
+
+		if (options.filter !== undefined) {
+			entries = await pFilter(entries, options.filter, {
+				concurrency: 1024,
+				signal: options.signal,
+			});
+		}
+
+		return entries;
+	};
+
 	const promise = (async () => {
+		options.signal?.throwIfAborted();
+
 		/**
 		@type {Entry[]}
 		*/
@@ -236,31 +278,7 @@ export default function cpy(
 
 		patterns = patterns.map(pattern => new GlobPattern(pattern, destination, {...options, ignore}));
 
-		for (const pattern of patterns) {
-			/**
-			@type {string[]}
-			*/
-			let matches = [];
-
-			try {
-				matches = pattern.getMatches();
-			} catch (error) {
-				throw new CpyError(`Cannot glob \`${pattern.originalPath}\`: ${error.message}`, {cause: error});
-			}
-
-			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath) && !isDynamicPattern(ignore)) {
-				throw new CpyError(`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`);
-			}
-
-			entries = [
-				...entries,
-				...matches.map(sourcePath => new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern)),
-			];
-		}
-
-		if (options.filter !== undefined) {
-			entries = await pFilter(entries, options.filter, {concurrency: 1024});
-		}
+		entries = await getEntries(patterns, ignore);
 
 		if (entries.length === 0) {
 			const progressData = {
@@ -306,7 +324,7 @@ export default function cpy(
 
 				const progressData = {
 					totalFiles: entries.length,
-					percent: entries.length === 0 ? 0 : completedFiles / entries.length,
+					percent: completedFiles / entries.length,
 					completedFiles,
 					completedSize,
 					sourcePath: event.sourcePath,
@@ -321,33 +339,35 @@ export default function cpy(
 			}
 		};
 
-		return pMap(
-			entries,
-			async entry => {
-				let to = preprocessDestinationPath({
-					entry,
-					destination,
-					options,
-				});
+		const copyFileMapper = async entry => {
+			let to = preprocessDestinationPath({
+				entry,
+				destination,
+				options,
+			});
 
-				// Apply rename after computing the base destination path
-				to = renameFile(to, options.rename);
+			// Apply rename after computing the base destination path
+			to = renameFile(to, options.rename);
 
-				// Check for self-copy after rename has been applied
-				if (isSelfCopy(entry.path, to)) {
-					throw new CpyError(`Refusing to copy to itself: \`${entry.path}\``);
-				}
+			// Check for self-copy after rename has been applied
+			if (isSelfCopy(entry.path, to)) {
+				throw new CpyError(`Refusing to copy to itself: \`${entry.path}\``);
+			}
 
-				try {
-					await copyFile(entry.path, to, {...options, onProgress: fileProgressHandler});
-				} catch (error) {
-					throw new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`, {cause: error});
-				}
+			try {
+				await copyFile(entry.path, to, {...options, onProgress: fileProgressHandler});
+			} catch (error) {
+				options.signal?.throwIfAborted();
+				throw new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`, {cause: error});
+			}
 
-				return to;
-			},
-			{concurrency},
-		);
+			return to;
+		};
+
+		return pMap(entries, copyFileMapper, {
+			concurrency,
+			signal: options.signal,
+		});
 	})();
 
 	promise.on = (_eventName, callback) => {

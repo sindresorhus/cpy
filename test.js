@@ -1111,3 +1111,63 @@ test('glob with flat and absolute destination', async t => {
 	t.true(fs.existsSync(path.join(absDest, 'b.js')));
 	t.false(fs.existsSync(path.join(absDest, 'c.ts')));
 });
+
+test('signal option allows aborting copy operation', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.mkdirSync(path.join(t.context.tmp, 'dest'));
+
+	// Create many files to increase chance of catching the abort
+	for (let index = 0; index < 100; index++) {
+		fs.writeFileSync(
+			path.join(t.context.tmp, 'source', `file${index}.txt`),
+			'x'.repeat(10_000),
+		);
+	}
+
+	const controller = new AbortController();
+
+	setTimeout(() => {
+		controller.abort();
+	}, 10);
+
+	await t.throwsAsync(
+		cpy('source/*', path.join(t.context.tmp, 'dest'), {
+			cwd: t.context.tmp,
+			signal: controller.signal,
+		}),
+		{name: 'AbortError'},
+	);
+});
+
+test('signal option throws when already aborted', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'source.txt'), 'content');
+
+	const controller = new AbortController();
+	controller.abort();
+
+	await t.throwsAsync(
+		cpy('source.txt', t.context.tmp, {
+			cwd: t.context.tmp,
+			signal: controller.signal,
+		}),
+		{name: 'AbortError'},
+	);
+});
+
+test('signal option works with custom abort reason', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.writeFileSync(path.join(t.context.tmp, 'source.txt'), 'content');
+
+	const controller = new AbortController();
+	const customReason = new Error('Custom abort reason');
+	controller.abort(customReason);
+
+	const error = await t.throwsAsync(cpy('source.txt', t.context.tmp, {
+		cwd: t.context.tmp,
+		signal: controller.signal,
+	}));
+
+	t.is(error, customReason);
+});

@@ -119,6 +119,11 @@ export type Options = {
 	```
 	*/
 	readonly onProgress?: (progress: ProgressData) => void;
+
+	/**
+	Abort signal to cancel the copy operation.
+	*/
+	readonly signal?: AbortSignal;
 } & Readonly<GlobOptions> & CopyFileOptions;
 
 export type ProgressData = {
