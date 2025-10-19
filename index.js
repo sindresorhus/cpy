@@ -76,14 +76,6 @@ const expandPatternsWithBraceExpansion = patterns => patterns.flatMap(pattern =>
 */
 const isSelfCopy = (from, to) => path.resolve(to) === path.resolve(from);
 
-const ensureNotSelfCopy = (from, to) => {
-	if (isSelfCopy(from, to)) {
-		throw new CpyError(`Refusing to copy to itself: \`${from}\``);
-	}
-
-	return to;
-};
-
 const relativizeWithin = (base, file) => {
 	const relativePath = path.relative(base, file);
 	if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
@@ -125,7 +117,7 @@ const computeToForGlob = ({entry, destination, options}) => {
 
 const computeToForNonGlob = ({entry, destination, options}) => {
 	if (path.isAbsolute(destination)) {
-		return ensureNotSelfCopy(entry.path, path.join(destination, entry.name));
+		return path.join(destination, entry.name);
 	}
 
 	const insideCwd = !path.relative(options.cwd, entry.path).startsWith('..');
@@ -145,10 +137,10 @@ const computeToForNonGlob = ({entry, destination, options}) => {
 	}
 
 	if (!entry.pattern.isDirectory && !insideCwd) {
-		return ensureNotSelfCopy(entry.path, path.join(path.resolve(options.cwd, destination), entry.name));
+		return path.join(path.resolve(options.cwd, destination), entry.name);
 	}
 
-	return ensureNotSelfCopy(entry.path, path.join(options.cwd, destination, path.relative(options.cwd, entry.path)));
+	return path.join(options.cwd, destination, path.relative(options.cwd, entry.path));
 };
 
 const preprocessDestinationPath = ({entry, destination, options}) => (
@@ -334,14 +326,19 @@ export default function cpy(
 		return pMap(
 			entries,
 			async entry => {
-				const to = renameFile(
-					preprocessDestinationPath({
-						entry,
-						destination,
-						options,
-					}),
-					options.rename,
-				);
+				let to = preprocessDestinationPath({
+					entry,
+					destination,
+					options,
+				});
+
+				// Apply rename after computing the base destination path
+				to = renameFile(to, options.rename);
+
+				// Check for self-copy after rename has been applied
+				if (isSelfCopy(entry.path, to)) {
+					throw new CpyError(`Refusing to copy to itself: \`${entry.path}\``);
+				}
 
 				try {
 					await copyFile(entry.path, to, {...options, onProgress: fileProgressHandler});
