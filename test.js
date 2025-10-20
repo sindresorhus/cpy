@@ -1171,3 +1171,19 @@ test('signal option works with custom abort reason', async t => {
 
 	t.is(error, customReason);
 });
+
+test('followSymbolicLinks option', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	fs.mkdirSync(path.join(t.context.tmp, 'linked'));
+	fs.writeFileSync(path.join(t.context.tmp, 'linked', 'file.txt'), 'content');
+	fs.symlinkSync(path.join(t.context.tmp, 'linked'), path.join(t.context.tmp, 'source', 'link'), 'dir');
+
+	// Default: follows symlinks
+	await cpy('source/**', path.join(t.context.tmp, 'dest1'), {cwd: t.context.tmp});
+	t.true(fs.existsSync(path.join(t.context.tmp, 'dest1', 'link', 'file.txt')));
+
+	// Disabled: does not follow symlinks
+	await cpy('source/**', path.join(t.context.tmp, 'dest2'), {cwd: t.context.tmp, followSymbolicLinks: false});
+	t.false(fs.existsSync(path.join(t.context.tmp, 'dest2', 'link', 'file.txt')));
+});

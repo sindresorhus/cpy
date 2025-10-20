@@ -179,6 +179,13 @@ Type: [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSign
 
 Abort signal to cancel the copy operation.
 
+##### followSymbolicLinks
+
+Type: `boolean`\
+Default: `true`
+
+Whether to follow symbolic links.
+
 ##### Source file object
 
 ###### path

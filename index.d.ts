@@ -124,6 +124,13 @@ export type Options = {
 	Abort signal to cancel the copy operation.
 	*/
 	readonly signal?: AbortSignal;
+
+	/**
+	Whether to follow symbolic links.
+
+	@default true
+	*/
+	readonly followSymbolicLinks?: boolean;
 } & Readonly<GlobOptions> & CopyFileOptions;
 
 export type ProgressData = {
