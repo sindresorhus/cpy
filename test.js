@@ -1187,3 +1187,28 @@ test('followSymbolicLinks option', async t => {
 	await cpy('source/**', path.join(t.context.tmp, 'dest2'), {cwd: t.context.tmp, followSymbolicLinks: false});
 	t.false(fs.existsSync(path.join(t.context.tmp, 'dest2', 'link', 'file.txt')));
 });
+
+test('preserveTimestamps option', async t => {
+	fs.mkdirSync(t.context.tmp);
+	fs.mkdirSync(path.join(t.context.tmp, 'source'));
+	const sourceFile = path.join(t.context.tmp, 'source', 'file.txt');
+	fs.writeFileSync(sourceFile, 'content');
+
+	// Set specific old timestamps on source file
+	const oldTime = new Date(2000, 0, 1);
+	fs.utimesSync(sourceFile, oldTime, oldTime);
+
+	const sourceStats = fs.statSync(sourceFile);
+
+	// With preserveTimestamps enabled
+	await cpy('source/**', path.join(t.context.tmp, 'dest'), {
+		cwd: t.context.tmp,
+		preserveTimestamps: true,
+	});
+
+	const destinationStats = fs.statSync(path.join(t.context.tmp, 'dest', 'file.txt'));
+
+	// Verify timestamps are preserved
+	t.is(destinationStats.mtime.getTime(), sourceStats.mtime.getTime());
+	t.is(destinationStats.atime.getTime(), sourceStats.atime.getTime());
+});

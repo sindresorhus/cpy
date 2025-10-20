@@ -2,6 +2,7 @@ import process from 'node:process';
 import EventEmitter from 'node:events';
 import path from 'node:path';
 import os from 'node:os';
+import fs from 'node:fs/promises';
 import pMap from 'p-map';
 import {copyFile} from 'copy-file';
 import pFilter from 'p-filter';
@@ -280,6 +281,8 @@ export default function cpy(
 
 		entries = await getEntries(patterns, ignore);
 
+		options.signal?.throwIfAborted();
+
 		if (entries.length === 0) {
 			const progressData = {
 				totalFiles: 0,
@@ -356,6 +359,12 @@ export default function cpy(
 
 			try {
 				await copyFile(entry.path, to, {...options, onProgress: fileProgressHandler});
+
+				if (options.preserveTimestamps) {
+					options.signal?.throwIfAborted();
+					const stats = await fs.stat(entry.path);
+					await fs.utimes(to, stats.atime, stats.mtime);
+				}
 			} catch (error) {
 				options.signal?.throwIfAborted();
 				throw new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`, {cause: error});

@@ -186,6 +186,13 @@ Default: `true`
 
 Whether to follow symbolic links.
 
+##### preserveTimestamps
+
+Type: `boolean`\
+Default: `false`
+
+Preserve file access and modification timestamps when copying.
+
 ##### Source file object
 
 ###### path

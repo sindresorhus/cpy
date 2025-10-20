@@ -131,6 +131,13 @@ export type Options = {
 	@default true
 	*/
 	readonly followSymbolicLinks?: boolean;
+
+	/**
+	Preserve file access and modification timestamps when copying.
+
+	@default false
+	*/
+	readonly preserveTimestamps?: boolean;
 } & Readonly<GlobOptions> & CopyFileOptions;
 
 export type ProgressData = {
