@@ -110,14 +110,28 @@ await cpy('src/**/*.js', 'destination', {
 
 Type: `string | Function`
 
-Filename or function returning a filename used to rename every file in `source`.
+Filename or function used to rename every file in `source`. Use a two-argument function to receive a frozen `source` file object and a mutable `destination` file object. The destination path must stay within the original destination directory. The legacy single-argument form is deprecated, emits a warning, and will be removed in the next major release.
 
 ```js
 import cpy from 'cpy';
 
 await cpy('foo.js', 'destination', {
-	// The `basename` is the filename with extension.
-	rename: basename => `prefix-${basename}`
+	rename: (source, destination) => {
+		if (source.nameWithoutExtension === 'foo') {
+			destination.nameWithoutExtension = 'bar';
+		}
+	}
+});
+
+await cpy('foo.js', 'destination', {
+	rename: (source, destination) => {
+		if (source.nameWithoutExtension === 'foo') {
+			destination.extension = 'ts';
+		}
+
+		console.log(destination.name);
+		//=> 'foo.ts'
+	}
 });
 
 await cpy('foo.js', 'destination', {
@@ -208,6 +222,36 @@ Type: `string`\
 Example: `'dir/foo.js'` if `cwd` was `'/tmp'`
 
 Relative path to the file from `cwd`.
+
+###### name
+
+Type: `string`\
+Example: `'foo.js'`
+
+Filename with extension.
+
+###### nameWithoutExtension
+
+Type: `string`\
+Example: `'foo'`
+
+Filename without extension.
+
+###### extension
+
+Type: `string`\
+Example: `'js'`
+
+File extension.
+
+##### Destination file object
+
+###### path
+
+Type: `string`\
+Example: `'/tmp/dir/foo.js'`
+
+Resolved destination path for the file. The directory part must stay within the original destination directory.
 
 ###### name
 

@@ -55,6 +55,168 @@ class Entry {
 	}
 }
 
+const assertBasename = (name, label, valueLabel = label) => {
+	if (typeof name !== 'string') {
+		throw new TypeError(`${valueLabel} must be a string, got ${typeof name}`);
+	}
+
+	// Disallow any path separators and traversal
+	if (name.includes('/') || name.includes('\\')) {
+		throw new TypeError(`${label} must not contain path separators`);
+	}
+
+	if (name === '' || name === '.' || name === '..') {
+		throw new TypeError(`${label} must be a valid filename`);
+	}
+
+	if (path.basename(name) !== name) {
+		throw new TypeError(`${label} must be a filename, not a path`);
+	}
+
+	return name;
+};
+
+const assertRenameBasename = name => assertBasename(name, 'Rename', 'Rename value');
+const assertDestinationBasename = (name, label) => assertBasename(name, label);
+
+const assertDestinationExtension = extension => {
+	if (typeof extension !== 'string') {
+		throw new TypeError(`Destination extension must be a string, got ${typeof extension}`);
+	}
+
+	let normalizedExtension = extension;
+
+	if (normalizedExtension.startsWith('.')) {
+		normalizedExtension = normalizedExtension.slice(1);
+	}
+
+	if (normalizedExtension.includes('/') || normalizedExtension.includes('\\')) {
+		throw new TypeError('Destination extension must not contain path separators');
+	}
+
+	if (normalizedExtension.includes('.')) {
+		throw new TypeError('Destination extension must not include dots');
+	}
+
+	return normalizedExtension;
+};
+
+let hasWarnedAboutLegacyRename = false;
+
+const warnAboutLegacyRename = () => {
+	if (hasWarnedAboutLegacyRename) {
+		return;
+	}
+
+	hasWarnedAboutLegacyRename = true;
+	process.emitWarning('The rename callback with a single basename argument is deprecated and will be removed in the next major release. Use rename(source, destination) instead.', {
+		code: 'CPY_RENAME_DEPRECATED',
+		type: 'DeprecationWarning',
+	});
+};
+
+const parseBasename = basename => {
+	const extension = path.extname(basename);
+	return {
+		name: basename,
+		nameWithoutExtension: path.basename(basename, extension),
+		extension: extension.slice(1),
+	};
+};
+
+const createSourceFile = filePath => Object.freeze({
+	path: filePath,
+	...parseBasename(path.basename(filePath)),
+});
+
+const createDestinationFile = filePath => {
+	const directory = path.dirname(filePath);
+	const resolvedDirectory = path.resolve(directory);
+	let {name, nameWithoutExtension, extension} = parseBasename(path.basename(filePath));
+	let resolvedPath = filePath;
+
+	const updateNameValues = nextName => {
+		({name, nameWithoutExtension, extension} = parseBasename(nextName));
+		resolvedPath = path.join(directory, name);
+	};
+
+	const updatePath = nextPath => {
+		if (typeof nextPath !== 'string') {
+			throw new TypeError(`Destination path must be a string, got ${typeof nextPath}`);
+		}
+
+		const resolvedNextPath = path.resolve(directory, nextPath);
+		const nextDirectory = path.dirname(resolvedNextPath);
+		if (nextDirectory !== resolvedDirectory) {
+			throw new TypeError('Destination path must stay within the destination directory');
+		}
+
+		const nextName = path.basename(resolvedNextPath);
+		assertDestinationBasename(nextName, 'Destination path');
+		updateNameValues(nextName);
+	};
+
+	const updateName = nextName => {
+		assertDestinationBasename(nextName, 'Destination name');
+		updateNameValues(nextName);
+	};
+
+	const updateNameWithoutExtension = nextNameWithoutExtension => {
+		assertDestinationBasename(nextNameWithoutExtension, 'Destination nameWithoutExtension');
+		nameWithoutExtension = nextNameWithoutExtension;
+		name = extension === '' ? nameWithoutExtension : `${nameWithoutExtension}.${extension}`;
+		resolvedPath = path.join(directory, name);
+	};
+
+	const updateExtension = nextExtension => {
+		extension = assertDestinationExtension(nextExtension);
+		name = extension === '' ? nameWithoutExtension : `${nameWithoutExtension}.${extension}`;
+		resolvedPath = path.join(directory, name);
+	};
+
+	const destination = {};
+	Object.defineProperties(destination, {
+		path: {
+			get() {
+				return resolvedPath;
+			},
+			set(value) {
+				updatePath(value);
+			},
+			enumerable: true,
+		},
+		name: {
+			get() {
+				return name;
+			},
+			set(value) {
+				updateName(value);
+			},
+			enumerable: true,
+		},
+		nameWithoutExtension: {
+			get() {
+				return nameWithoutExtension;
+			},
+			set(value) {
+				updateNameWithoutExtension(value);
+			},
+			enumerable: true,
+		},
+		extension: {
+			get() {
+				return extension;
+			},
+			set(value) {
+				updateExtension(value);
+			},
+			enumerable: true,
+		},
+	});
+
+	return destination;
+};
+
 /**
 Expand patterns like `'node_modules/{globby,micromatch}'` into `['node_modules/globby', 'node_modules/micromatch']`.
 
@@ -152,45 +314,32 @@ const preprocessDestinationPath = ({entry, destination, options}) => (
 @param {string} source
 @param {string|Function} rename
 */
-const renameFile = (source, rename) => {
-	const directory = path.dirname(source);
-
-	const assertSafeBasename = name => {
-		if (typeof name !== 'string') {
-			throw new TypeError(`Rename value must be a string, got ${typeof name}`);
-		}
-
-		// Disallow any path separators and traversal
-		if (name.includes('/') || name.includes('\\')) {
-			throw new TypeError('Rename must not contain path separators');
-		}
-
-		if (name === '' || name === '.' || name === '..') {
-			throw new TypeError('Rename must be a valid filename');
-		}
-
-		if (path.basename(name) !== name) {
-			throw new TypeError('Rename must be a filename, not a path');
-		}
-
-		return name;
-	};
+const renameFile = ({source, destination, rename}) => {
+	const directory = path.dirname(destination);
 
 	if (typeof rename === 'string') {
-		return path.join(directory, assertSafeBasename(rename));
+		return path.join(directory, assertRenameBasename(rename));
 	}
 
 	if (typeof rename === 'function') {
-		const filename = path.basename(source);
-		const result = rename(filename);
-		if (typeof result !== 'string') {
-			throw new TypeError(`Rename function must return a string, got ${typeof result}`);
+		if (rename.length <= 1) {
+			warnAboutLegacyRename();
+			const filename = path.basename(destination);
+			const result = rename(filename);
+			if (typeof result !== 'string') {
+				throw new TypeError(`Rename function with a single parameter must return a string, got ${typeof result}. Use rename(source, destination) for the object form.`);
+			}
+
+			return path.join(directory, assertRenameBasename(result));
 		}
 
-		return path.join(directory, assertSafeBasename(result));
+		const sourceFile = createSourceFile(source);
+		const destinationFile = createDestinationFile(destination);
+		rename(sourceFile, destinationFile);
+		return destinationFile.path;
 	}
 
-	return source;
+	return destination;
 };
 
 /**
@@ -350,7 +499,11 @@ export default function cpy(
 			});
 
 			// Apply rename after computing the base destination path
-			to = renameFile(to, options.rename);
+			to = renameFile({
+				source: entry.path,
+				destination: to,
+				rename: options.rename,
+			});
 
 			// Check for self-copy after rename has been applied
 			if (isSelfCopy(entry.path, to)) {

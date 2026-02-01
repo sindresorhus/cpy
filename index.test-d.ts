@@ -3,7 +3,20 @@ import cpy, {type ProgressEmitter, type ProgressData, type Entry} from './index.
 
 expectType<Promise<string[]> & ProgressEmitter>(cpy(['source/*.png', '!source/goat.png'], 'destination'));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {rename: 'foobar'}));
-expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {rename: basename => `prefix-${basename}`}));
+expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {rename: (basename: string) => `prefix-${basename}`}));
+expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {
+	rename(source, destination) {
+		expectType<string>(source.path);
+		expectType<string>(source.name);
+		expectType<string>(source.nameWithoutExtension);
+		expectType<string>(source.extension);
+		expectType<string>(destination.path);
+		expectType<string>(destination.name);
+		expectType<string>(destination.nameWithoutExtension);
+		expectType<string>(destination.extension);
+		destination.extension = 'txt';
+	},
+}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {cwd: '/'}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {flat: true}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {overwrite: false}));

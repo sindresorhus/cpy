@@ -317,22 +317,40 @@ test('rename function: rejects path separators and traversal', async () => {
 	writeFiles(context.tmp, {'a.js': 'A'});
 
 	await assert.rejects(
-		cpy(['a.js'], 'out', {cwd: context.tmp, rename: () => '../evil.js'}),
+		cpy(['a.js'], 'out', {
+			cwd: context.tmp,
+			rename(source, destination) {
+				assert.strictEqual(source.name, 'a.js');
+				destination.name = '../evil.js';
+			},
+		}),
 		expectError(TypeError, /must not contain path separators|filename/),
 	);
 
 	await assert.rejects(
-		cpy(['a.js'], 'out', {cwd: context.tmp, rename: () => 'dir/evil.js'}),
+		cpy(['a.js'], 'out', {
+			cwd: context.tmp,
+			rename(source, destination) {
+				assert.strictEqual(source.name, 'a.js');
+				destination.name = 'dir/evil.js';
+			},
+		}),
 		expectError(TypeError, /must not contain path separators|filename/),
 	);
 });
 
-test('rename function: rejects non-string return values', async () => {
+test('rename function: rejects non-string destination names', async () => {
 	writeFiles(context.tmp, {'a.js': 'A'});
 
 	await assert.rejects(
-		cpy(['a.js'], 'out', {cwd: context.tmp, rename: () => 42}),
-		expectError(TypeError, /must return a string/),
+		cpy(['a.js'], 'out', {
+			cwd: context.tmp,
+			rename(source, destination) {
+				assert.strictEqual(source.name, 'a.js');
+				destination.name = 42;
+			},
+		}),
+		expectError(TypeError, /must be a string/),
 	);
 });
 
@@ -346,7 +364,10 @@ test('rename filenames using a function', async () => {
 
 	await cpy(['foo.js', 'source/bar.js'], 'destination/subdir', {
 		cwd: context.tmp,
-		rename: basename => `prefix-${basename}`,
+		rename(source, destination) {
+			assert.ok(source);
+			destination.name = `prefix-${source.name}`;
+		},
 	});
 
 	assert.strictEqual(
@@ -364,17 +385,96 @@ test('rename function receives the basename argument with the file extension', a
 	fs.writeFileSync(path.join(context.tmp, 'foo.ts'), '');
 
 	const visited = [];
-	await cpy(['foo.js', 'foo.ts'], 'destination/subdir', {
-		cwd: context.tmp,
-		rename(basename) {
-			visited.push(basename);
-			return basename;
-		},
-	});
+	let warningCount = 0;
+	const warningHandler = warning => {
+		if (warning.code === 'CPY_RENAME_DEPRECATED') {
+			warningCount++;
+		}
+	};
+
+	process.on('warning', warningHandler);
+
+	try {
+		await cpy(['foo.js', 'foo.ts'], 'destination/subdir', {
+			cwd: context.tmp,
+			rename(basename) {
+				visited.push(basename);
+				return basename;
+			},
+		});
+	} finally {
+		process.removeListener('warning', warningHandler);
+	}
 
 	assert.strictEqual(visited.length, 2);
 	assert.ok(visited.includes('foo.js'));
 	assert.ok(visited.includes('foo.ts'));
+	assert.strictEqual(warningCount, 1);
+});
+
+test('rename function can update destination properties', async () => {
+	writeFiles(context.tmp, {'foo.js': 'console.log("foo");'});
+
+	await cpy(['foo.js'], 'destination', {
+		cwd: context.tmp,
+		rename(source, destination) {
+			assert.strictEqual(source.path, path.join(context.tmp, 'foo.js'));
+			assert.strictEqual(source.name, 'foo.js');
+			assert.strictEqual(source.nameWithoutExtension, 'foo');
+			assert.strictEqual(source.extension, 'js');
+			assert.ok(Object.isFrozen(source));
+			assert.throws(() => {
+				source.name = 'bar.js';
+			}, TypeError);
+
+			assert.strictEqual(destination.path, path.join(context.tmp, 'destination', 'foo.js'));
+			assert.strictEqual(destination.name, 'foo.js');
+			assert.strictEqual(destination.nameWithoutExtension, 'foo');
+			assert.strictEqual(destination.extension, 'js');
+
+			destination.nameWithoutExtension = 'bar';
+			assert.strictEqual(destination.name, 'bar.js');
+
+			destination.extension = 'ts';
+			assert.strictEqual(destination.name, 'bar.ts');
+			assert.strictEqual(destination.path, path.join(context.tmp, 'destination', 'bar.ts'));
+		},
+	});
+
+	assert.strictEqual(
+		read(context.tmp, 'foo.js'),
+		read(context.tmp, 'destination/bar.ts'),
+	);
+});
+
+test('rename function: destination path can be set to a filename', async () => {
+	writeFiles(context.tmp, {'foo.js': 'console.log("foo");'});
+
+	await cpy(['foo.js'], 'destination', {
+		cwd: context.tmp,
+		rename(_source, destination) {
+			destination.path = 'renamed.js';
+		},
+	});
+
+	assert.strictEqual(
+		read(context.tmp, 'foo.js'),
+		read(context.tmp, 'destination/renamed.js'),
+	);
+});
+
+test('rename function: destination path cannot change directories', async () => {
+	writeFiles(context.tmp, {'foo.js': 'console.log("foo");'});
+
+	await assert.rejects(
+		cpy(['foo.js'], 'destination', {
+			cwd: context.tmp,
+			rename(_source, destination) {
+				destination.path = path.join(context.tmp, 'other', 'foo.js');
+			},
+		}),
+		expectError(TypeError, /must stay within the destination directory/),
+	);
 });
 
 test('rename file in same directory', async () => {
@@ -394,7 +494,10 @@ test('rename file in same directory using function', async () => {
 
 	await cpy(['hello.js'], './', {
 		cwd: context.tmp,
-		rename: basename => `prefix-${basename}`,
+		rename(source, destination) {
+			assert.ok(source);
+			destination.name = `prefix-${source.name}`;
+		},
 	});
 
 	assert.strictEqual(read(context.tmp, 'prefix-hello.js'), 'console.log("hello");');

@@ -38,6 +38,51 @@ export type Entry = {
 	readonly extension: string;
 };
 
+export type RenameFile = {
+	/**
+	Resolved path to the file.
+
+	@example '/tmp/dir/foo.js'
+	*/
+	path: string;
+
+	/**
+	Filename with extension.
+
+	@example 'foo.js'
+	*/
+	name: string;
+
+	/**
+	Filename without extension.
+
+	@example 'foo'
+	*/
+	nameWithoutExtension: string;
+
+	/**
+	File extension.
+
+	@example 'js'
+	*/
+	extension: string;
+};
+
+export type RenameSource = Readonly<RenameFile>;
+
+/**
+Destination file object, can be mutated to rename the file.
+The `path` property must stay within the original destination directory.
+*/
+export type RenameDestination = RenameFile;
+
+/**
+Deprecated: Use the two-argument rename callback instead. This legacy signature emits a warning and will be removed in the next major release.
+*/
+export type LegacyRenameFunction = (basename: string) => string;
+
+export type RenameFunction = LegacyRenameFunction | ((source: RenameSource, destination: RenameDestination) => void);
+
 export type Options = {
 	/**
 	Working directory to find source files.
@@ -54,15 +99,18 @@ export type Options = {
 	readonly flat?: boolean;
 
 	/**
-	Filename or function returning a filename used to rename every file in `source`.
+	Filename or function used to rename every file in `source`. Use a two-argument function to receive a frozen source file object and a mutable destination file object. The destination path must stay within the original destination directory. The legacy single-argument form is deprecated, emits a warning, and will be removed in the next major release.
 
 	@example
 	```
 	import cpy from 'cpy';
 
 	await cpy('foo.js', 'destination', {
-		// The `basename` is the filename with extension.
-		rename: basename => `prefix-${basename}`
+		rename(source, destination) {
+			if (source.nameWithoutExtension === 'foo') {
+				destination.nameWithoutExtension = 'bar';
+			}
+		}
 	});
 
 	await cpy('foo.js', 'destination', {
@@ -70,7 +118,7 @@ export type Options = {
 	});
 	```
 	*/
-	readonly rename?: string | ((basename: string) => string);
+	readonly rename?: string | RenameFunction;
 
 	/**
 	Number of files being copied concurrently.
@@ -123,7 +171,7 @@ export type Options = {
 	/**
 	Abort signal to cancel the copy operation.
 	*/
-	readonly signal?: AbortSignal;
+	readonly signal?: AbortSignal | undefined;
 
 	/**
 	Whether to follow symbolic links.
