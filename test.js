@@ -836,7 +836,7 @@ test('absolute directory source paths', async () => {
 
 	assert.strictEqual(
 		read(context.tmp, 'source/hello.js'),
-		read(context.tmp, 'out/hello.js'),
+		read(context.tmp, 'out/source/hello.js'),
 	);
 });
 
@@ -852,6 +852,22 @@ test('absolute file source paths', async () => {
 	assert.strictEqual(
 		read(context.tmp, 'hello.js'),
 		read(context.tmp, 'out/hello.js'),
+	);
+});
+
+test('absolute destination preserves structure for directory inside cwd', async () => {
+	fs.mkdirSync(path.join(context.tmp, 'source'));
+	fs.writeFileSync(
+		path.join(context.tmp, 'source/hello.js'),
+		'console.log("hello");',
+	);
+
+	const absoluteDest = path.join(context.tmp, 'out-abs');
+	await cpy(['source'], absoluteDest, {cwd: context.tmp});
+
+	assert.strictEqual(
+		read(context.tmp, 'source/hello.js'),
+		read(absoluteDest, 'source/hello.js'),
 	);
 });
 

@@ -277,31 +277,31 @@ const computeToForGlob = ({entry, destination, options}) => {
 };
 
 const computeToForNonGlob = ({entry, destination, options}) => {
-	if (path.isAbsolute(destination)) {
-		return path.join(destination, entry.name);
-	}
+	const baseDestination = path.isAbsolute(destination)
+		? destination
+		: path.join(options.cwd, destination);
 
 	const insideCwd = !path.relative(options.cwd, entry.path).startsWith('..');
 
 	// TODO: This check will not work correctly if `options.cwd` and `entry.path` are on different partitions on Windows, see: https://github.com/sindresorhus/import-local/pull/12
 	if (entry.pattern.isDirectory && !insideCwd) {
 		const originalDir = path.resolve(options.cwd, entry.pattern.originalPath);
-		return path.join(options.cwd, destination, path.basename(originalDir), path.relative(originalDir, entry.path));
+		return path.join(baseDestination, path.basename(originalDir), path.relative(originalDir, entry.path));
 	}
 
 	if (!entry.pattern.isDirectory && entry.path === entry.relativePath) {
-		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath), path.relative(entry.pattern.originalPath, entry.path));
+		return path.join(baseDestination, path.basename(entry.pattern.originalPath), path.relative(entry.pattern.originalPath, entry.path));
 	}
 
 	if (!entry.pattern.isDirectory && options.flat) {
-		return path.join(options.cwd, destination, path.basename(entry.pattern.originalPath));
+		return path.join(baseDestination, path.basename(entry.pattern.originalPath));
 	}
 
 	if (!entry.pattern.isDirectory && !insideCwd) {
-		return path.join(path.resolve(options.cwd, destination), entry.name);
+		return path.join(baseDestination, entry.name);
 	}
 
-	return path.join(options.cwd, destination, path.relative(options.cwd, entry.path));
+	return path.join(baseDestination, path.relative(options.cwd, entry.path));
 };
 
 const preprocessDestinationPath = ({entry, destination, options}) => (
