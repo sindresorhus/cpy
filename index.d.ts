@@ -92,6 +92,13 @@ export type Options = {
 	readonly cwd?: string;
 
 	/**
+	Choose how destination paths are calculated for patterns. By default, globs are resolved relative to their parent and explicit paths are resolved relative to `cwd`. Set to `'pattern'` to make explicit paths behave like globs, or `'cwd'` to make globs behave like explicit paths.
+
+	@default undefined
+	*/
+	readonly base?: 'cwd' | 'pattern';
+
+	/**
 	Flatten directory tree.
 
 	@default false

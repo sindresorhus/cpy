@@ -246,6 +246,33 @@ const relativizeWithin = (base, file) => {
 	return relativePath;
 };
 
+const resolveRelativePath = (bases, file) => {
+	for (const base of bases) {
+		const relativePath = relativizeWithin(base, file);
+		if (relativePath !== undefined) {
+			return relativePath;
+		}
+	}
+
+	return path.basename(file);
+};
+
+const resolveCwdRelativePathForGlob = (entry, options) => {
+	const relativeToCwd = relativizeWithin(options.cwd, entry.path);
+	if (relativeToCwd !== undefined) {
+		return relativeToCwd;
+	}
+
+	const globParent = entry.pattern.normalizedPath;
+	const relativeToGlobParent = relativizeWithin(globParent, entry.path);
+	if (relativeToGlobParent !== undefined) {
+		const globParentBasename = path.basename(globParent);
+		return globParentBasename === '' ? relativeToGlobParent : path.join(globParentBasename, relativeToGlobParent);
+	}
+
+	return path.basename(entry.path);
+};
+
 const computeToForGlob = ({entry, destination, options}) => {
 	if (options.flat) {
 		return path.isAbsolute(destination)
@@ -256,9 +283,11 @@ const computeToForGlob = ({entry, destination, options}) => {
 	// Prefer glob-parent behavior to match existing semantics,
 	// but defend against self-copy / traversal (#114).
 	const from = path.resolve(entry.path);
-	const baseA = entry.pattern.normalizedPath; // Glob parent inside cwd
+	const baseA = entry.pattern.normalizedPath; // Glob parent path
 	const baseB = options.cwd;
-	const relativePath = relativizeWithin(baseA, entry.path) ?? relativizeWithin(baseB, entry.path) ?? path.basename(entry.path);
+	const relativePath = options.base === 'cwd'
+		? resolveCwdRelativePathForGlob(entry, options)
+		: resolveRelativePath([baseA, baseB], entry.path);
 	let toPath = path.join(destination, relativePath);
 
 	// Guard: never copy a file into itself (can truncate under concurrency).
@@ -281,9 +310,18 @@ const computeToForNonGlob = ({entry, destination, options}) => {
 		? destination
 		: path.join(options.cwd, destination);
 
-	const insideCwd = !path.relative(options.cwd, entry.path).startsWith('..');
+	if (options.base === 'pattern') {
+		const patternBase = entry.pattern.isDirectory
+			? path.resolve(options.cwd, entry.pattern.originalPath)
+			: path.resolve(options.cwd, path.dirname(entry.pattern.originalPath));
+		const relativePath = resolveRelativePath([patternBase], entry.path);
+		return path.join(baseDestination, relativePath);
+	}
 
-	// TODO: This check will not work correctly if `options.cwd` and `entry.path` are on different partitions on Windows, see: https://github.com/sindresorhus/import-local/pull/12
+	const relativeToCwd = relativizeWithin(options.cwd, entry.path);
+	const insideCwd = relativeToCwd !== undefined;
+
+	// This check should treat different partitions on Windows as outside the cwd.
 	if (entry.pattern.isDirectory && !insideCwd) {
 		const originalDir = path.resolve(options.cwd, entry.pattern.originalPath);
 		return path.join(baseDestination, path.basename(originalDir), path.relative(originalDir, entry.path));
@@ -301,7 +339,11 @@ const computeToForNonGlob = ({entry, destination, options}) => {
 		return path.join(baseDestination, entry.name);
 	}
 
-	return path.join(baseDestination, path.relative(options.cwd, entry.path));
+	if (relativeToCwd === undefined) {
+		return path.join(baseDestination, entry.name);
+	}
+
+	return path.join(baseDestination, relativeToCwd);
 };
 
 const preprocessDestinationPath = ({entry, destination, options}) => (
@@ -406,6 +448,10 @@ export default function cpy(
 
 	const promise = (async () => {
 		options.signal?.throwIfAborted();
+
+		if (options.base !== undefined && options.base !== 'cwd' && options.base !== 'pattern') {
+			throw new TypeError('`base` must be "cwd" or "pattern"');
+		}
 
 		/**
 		@type {Entry[]}

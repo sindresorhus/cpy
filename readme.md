@@ -78,12 +78,6 @@ Default: `process.cwd()`
 
 Working directory to find source files.
 
-> [!NOTE]
-> Globs and explicit paths preserve paths differently.
-> Globs keep paths **relative to the glob’s parent** (`source/*.md` → `distribution/readme.md`).
-> Explicit paths keep paths **relative to `cwd`** (`source/file.js` → `distribution/source/file.js`).
-> Use a single glob or set `cwd` so all patterns share the same base.
-
 ##### overwrite
 
 Type: `boolean`\
@@ -105,6 +99,13 @@ await cpy('src/**/*.js', 'destination', {
 	flat: true
 });
 ```
+
+##### base
+
+Type: `'cwd' | 'pattern'`\
+Default: `undefined`
+
+Choose how destination paths are calculated for patterns. By default, globs are resolved relative to their parent and explicit paths are resolved relative to `cwd`. Set to `'pattern'` to make explicit paths behave like globs, or `'cwd'` to make globs behave like explicit paths.
 
 ##### rename
 

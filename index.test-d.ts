@@ -18,6 +18,8 @@ expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {
 	},
 }));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {cwd: '/'}));
+expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {base: 'pattern'}));
+expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {base: 'cwd'}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {flat: true}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {overwrite: false}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {concurrency: 2}));

@@ -36,7 +36,10 @@ export default class GlobPattern {
 	}
 
 	get normalizedPath() {
-		const segments = this.originalPath.split('/');
+		const normalizedPattern = this.path.startsWith('!') && !this.path.startsWith('!(')
+			? this.path.slice(1)
+			: this.path;
+		const segments = normalizedPattern.split('/');
 		const magicIndex = segments.findIndex(item => item ? isDynamicPattern(item) : false);
 		const normalized = segments.slice(0, magicIndex).join('/');
 

@@ -79,6 +79,13 @@ test('throws on invalid concurrency value', async () => {
 	await assert.rejects(cpy(['license', 'package.json'], context.tmp, {concurrency: 'foo'}));
 });
 
+test('throws on invalid base option', async () => {
+	await assert.rejects(
+		cpy(['license'], context.tmp, {base: 'invalid'}),
+		expectError(TypeError, /`base` must be/),
+	);
+});
+
 test('copy array of files with filter', async () => {
 	await cpy(['license', 'package.json'], context.tmp, {
 		filter(file) {
@@ -236,6 +243,219 @@ test('path structure', async () => {
 		read(context.tmp, 'cwd/hello.js'),
 		read(context.tmp, 'out', 'cwd/hello.js'),
 	);
+});
+
+test('base option: pattern aligns explicit paths with globs', async () => {
+	fs.mkdirSync(path.join(context.tmp, 'src'), {recursive: true});
+	fs.writeFileSync(path.join(context.tmp, 'src/hello-world.js'), 'console.log("hello");');
+	fs.writeFileSync(path.join(context.tmp, 'src/README.md'), 'readme');
+
+	await cpy(['src/*.md', 'src/hello-world.js'], 'dist', {
+		cwd: context.tmp,
+		base: 'pattern',
+	});
+
+	assert.strictEqual(
+		read(context.tmp, 'src/README.md'),
+		read(context.tmp, 'dist/README.md'),
+	);
+	assert.strictEqual(
+		read(context.tmp, 'src/hello-world.js'),
+		read(context.tmp, 'dist/hello-world.js'),
+	);
+});
+
+test('base option: cwd preserves nested glob structure from cwd', async () => {
+	writeFiles(context.tmp, {
+		'resources/views/app.edge': 'app',
+		'resources/views/nested/baz.edge': 'baz',
+	});
+
+	const buildDirectory = path.join(context.tmp, 'build');
+
+	await cpy(['resources/views/**/*.edge'], buildDirectory, {
+		cwd: context.tmp,
+		base: 'cwd',
+	});
+
+	assert.strictEqual(
+		read(context.tmp, 'resources', 'views', 'app.edge'),
+		read(buildDirectory, 'resources', 'views', 'app.edge'),
+	);
+	assert.strictEqual(
+		read(context.tmp, 'resources', 'views', 'nested', 'baz.edge'),
+		read(buildDirectory, 'resources', 'views', 'nested', 'baz.edge'),
+	);
+});
+
+test('base option: cwd aligns globs outside cwd with explicit paths', async () => {
+	const root = context.dir;
+	const cwd = path.join(root, 'cwd');
+	const src = path.join(root, 'src');
+	const out = path.join(cwd, 'out');
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.mkdirSync(src, {recursive: true});
+	writeFiles(root, {
+		'src/root.js': 'root',
+		'src/nested/inner.js': 'inner',
+		'src/nested/README.md': 'readme',
+	});
+
+	await cpy(['../src/**/*.js'], 'out', {
+		cwd,
+		base: 'cwd',
+	});
+
+	assert.strictEqual(read(src, 'root.js'), read(out, 'src/root.js'));
+	assert.strictEqual(read(src, 'nested/inner.js'), read(out, 'src/nested/inner.js'));
+	assert.ok(!fs.existsSync(path.join(out, 'src/nested/README.md')));
+});
+
+test('base option: cwd aligns absolute globs outside cwd', async () => {
+	const root = context.dir;
+	const cwd = path.join(root, 'cwd');
+	const src = path.join(root, 'src');
+	const out = path.join(cwd, 'out');
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.mkdirSync(path.join(src, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(src, 'nested/inner.js'), 'inner');
+
+	const pattern = path.join(src, '**/*.js');
+	await cpy([pattern], 'out', {
+		cwd,
+		base: 'cwd',
+	});
+
+	assert.strictEqual(read(src, 'nested/inner.js'), read(out, 'src/nested/inner.js'));
+});
+
+test('base option: cwd aligns outside globs with absolute destination', async () => {
+	const root = context.dir;
+	const cwd = path.join(root, 'cwd');
+	const src = path.join(root, 'src');
+	const out = path.join(root, 'out');
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.mkdirSync(path.join(src, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(src, 'nested/inner.js'), 'inner');
+
+	await cpy(['../src/**/*.js'], out, {
+		cwd,
+		base: 'cwd',
+	});
+
+	assert.strictEqual(read(src, 'nested/inner.js'), read(out, 'src/nested/inner.js'));
+});
+
+test('base option: cwd aligns outside globs with symlinked parent', async () => {
+	const root = context.dir;
+	const cwd = path.join(root, 'cwd');
+	const src = path.join(root, 'src');
+	const alias = path.join(root, 'alias');
+	const out = path.join(cwd, 'out');
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.mkdirSync(path.join(src, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(src, 'nested/inner.js'), 'inner');
+	fs.symlinkSync(src, alias, 'dir');
+
+	await cpy(['../alias/**/*.js'], 'out', {
+		cwd,
+		base: 'cwd',
+	});
+
+	assert.strictEqual(read(src, 'nested/inner.js'), read(out, 'alias/nested/inner.js'));
+});
+
+test('base option: cwd does not escape destination for dynamic absolute globs', {skip: process.platform === 'win32'}, async () => {
+	const root = context.dir;
+	const cwd = path.join(root, 'nested', 'cwd');
+	const source = path.join(root, 'source');
+	const out = path.join(root, 'dest', 'nested');
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.mkdirSync(path.join(source, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(source, 'nested', 'file.js'), 'content');
+
+	const rootSegments = root.split(path.sep).filter(Boolean);
+	if (rootSegments.length < 2) {
+		return;
+	}
+
+	const pattern = path.posix.join('/', '*', ...rootSegments.slice(1), 'source', '**/*.js');
+	await cpy([pattern], out, {
+		cwd,
+		base: 'cwd',
+	});
+
+	assert.strictEqual(read(source, 'nested/file.js'), read(out, 'file.js'));
+	assert.ok(!fs.existsSync(path.join(root, 'dest', 'source', 'nested', 'file.js')));
+});
+
+test('base option: cwd aligns parent directory globs outside cwd', async () => {
+	const root = context.dir;
+	const cwd = path.join(root, 'cwd');
+	const out = path.join(cwd, 'out');
+	fs.mkdirSync(cwd, {recursive: true});
+	writeFiles(root, {
+		'root.js': 'root',
+		'nested/inner.js': 'inner',
+	});
+
+	await cpy(['../**/*.js'], 'out', {
+		cwd,
+		base: 'cwd',
+	});
+
+	const rootName = path.basename(root);
+	assert.strictEqual(read(root, 'root.js'), read(out, rootName, 'root.js'));
+	assert.strictEqual(read(root, 'nested/inner.js'), read(out, rootName, 'nested/inner.js'));
+});
+
+test('base option: cwd keeps distinct outside glob parents', async () => {
+	const root = context.dir;
+	const cwd = path.join(root, 'cwd');
+	const first = path.join(root, 'first');
+	const second = path.join(root, 'second');
+	const out = path.join(cwd, 'out');
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.mkdirSync(first, {recursive: true});
+	fs.mkdirSync(second, {recursive: true});
+	writeFiles(root, {
+		'first/index.js': 'first',
+		'first/nested/shared.js': 'shared-1',
+		'second/index.js': 'second',
+		'second/nested/shared.js': 'shared-2',
+	});
+
+	await cpy(['../first/**/*.js', '../second/**/*.js'], 'out', {
+		cwd,
+		base: 'cwd',
+	});
+
+	assert.strictEqual(read(first, 'index.js'), read(out, 'first/index.js'));
+	assert.strictEqual(read(first, 'nested/shared.js'), read(out, 'first/nested/shared.js'));
+	assert.strictEqual(read(second, 'index.js'), read(out, 'second/index.js'));
+	assert.strictEqual(read(second, 'nested/shared.js'), read(out, 'second/nested/shared.js'));
+});
+
+test('base option: pattern with directory source copies contents without top-level directory', async () => {
+	writeFiles(context.tmp, {
+		'source/file.txt': 'content',
+		'source/nested/inner.txt': 'inner',
+	});
+
+	await cpy(['source'], 'destination', {
+		cwd: context.tmp,
+		base: 'pattern',
+	});
+
+	assert.strictEqual(
+		read(context.tmp, 'source/file.txt'),
+		read(context.tmp, 'destination/file.txt'),
+	);
+	assert.strictEqual(
+		read(context.tmp, 'source/nested/inner.txt'),
+		read(context.tmp, 'destination/nested/inner.txt'),
+	);
+	assert.ok(!fs.existsSync(path.join(context.tmp, 'destination/source')));
 });
 
 test('directory source outside cwd preserves structure under destination', async () => {
