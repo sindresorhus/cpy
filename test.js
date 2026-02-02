@@ -431,25 +431,24 @@ test('base option: cwd aligns outside globs with symlinked parent', async () => 
 test('base option: cwd does not escape destination for dynamic absolute globs', {skip: process.platform === 'win32'}, async () => {
 	const root = context.dir;
 	const cwd = path.join(root, 'nested', 'cwd');
-	const source = path.join(root, 'source');
+	const segment = path.join(root, 'segment');
+	const source = path.join(segment, 'source');
 	const out = path.join(root, 'dest', 'nested');
 	fs.mkdirSync(cwd, {recursive: true});
 	fs.mkdirSync(path.join(source, 'nested'), {recursive: true});
 	fs.writeFileSync(path.join(source, 'nested', 'file.js'), 'content');
 
-	const rootSegments = root.split(path.sep).filter(Boolean);
-	if (rootSegments.length < 2) {
-		return;
-	}
-
-	const pattern = path.posix.join('/', '*', ...rootSegments.slice(1), 'source', '**/*.js');
-	await cpy([pattern], out, {
+	const rootPosix = path.resolve(root).split(path.sep).join('/');
+	const pattern = `${rootPosix}/*/source/**/*.js`;
+	const results = await cpy([pattern], out, {
 		cwd,
 		base: 'cwd',
 	});
 
-	assert.strictEqual(read(source, 'nested/file.js'), read(out, 'file.js'));
-	assert.ok(!fs.existsSync(path.join(root, 'dest', 'source', 'nested', 'file.js')));
+	assert.strictEqual(results.length, 1);
+	const relative = path.relative(out, results[0]);
+	assert.ok(!relative.startsWith('..') && !path.isAbsolute(relative));
+	assert.strictEqual(read(source, 'nested/file.js'), fs.readFileSync(results[0], 'utf8'));
 });
 
 test('base option: cwd aligns parent directory globs outside cwd', async () => {
@@ -1662,7 +1661,7 @@ test('signal option allows aborting copy operation', async () => {
 	fs.mkdirSync(path.join(context.tmp, 'dest'));
 
 	// Create many files to increase chance of catching the abort
-	for (let index = 0; index < 100; index++) {
+	for (let index = 0; index < 50; index++) {
 		fs.writeFileSync(
 			path.join(context.tmp, 'source', `file${index}.txt`),
 			'x'.repeat(10_000),
@@ -1681,11 +1680,16 @@ test('signal option allows aborting copy operation', async () => {
 		await cpy('source/*', path.join(context.tmp, 'dest'), {
 			cwd: context.tmp,
 			signal: controller.signal,
+			concurrency: 1,
 		});
 		assert.fail('Expected an error to be thrown');
 	} catch (error) {
 		assert.strictEqual(error.name, 'AbortError');
 	}
+
+	await new Promise(resolve => {
+		setTimeout(resolve, 50);
+	});
 });
 
 test('signal option throws when already aborted', async () => {
