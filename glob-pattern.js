@@ -18,17 +18,53 @@ export default class GlobPattern {
 		this.destination = destination;
 		this.options = options;
 		this.isDirectory = false;
+		this.symlinkTarget = undefined;
+		this.symlinkRelative = undefined;
 
-		if (
-			!isDynamicPattern(pattern)
-		) {
-			const resolved = path.resolve(options.cwd, pattern);
-			if (fs.existsSync(resolved) && fs.lstatSync(resolved).isDirectory()) {
-				const directoryPosix = path.normalize(pattern).split(path.sep).join('/');
-				this.path = [directoryPosix, '**'].join('/');
-				this.isDirectory = true;
+		if (isDynamicPattern(pattern)) {
+			return;
+		}
+
+		const resolved = path.resolve(options.cwd, pattern);
+		if (!fs.existsSync(resolved)) {
+			return;
+		}
+
+		let lstat;
+		try {
+			lstat = fs.lstatSync(resolved);
+		} catch {
+			return;
+		}
+
+		const isSymlink = lstat.isSymbolicLink();
+		let stats = lstat;
+		if (options.followSymbolicLinks !== false) {
+			try {
+				stats = fs.statSync(resolved);
+			} catch {
+				return;
 			}
 		}
+
+		if (!stats.isDirectory()) {
+			return;
+		}
+
+		if (isSymlink && options.followSymbolicLinks !== false) {
+			const realPath = fs.realpathSync(resolved);
+			const relative = path.relative(options.cwd, resolved);
+			const realRelative = path.relative(options.cwd, realPath);
+			this.symlinkTarget = realPath;
+			this.symlinkRelative = relative.startsWith('..') ? undefined : relative;
+			const realRelativePosix = path.normalize(realRelative || '.').split(path.sep).join('/');
+			this.path = [realRelativePosix, '**'].join('/');
+		} else {
+			const directoryPosix = path.normalize(pattern).split(path.sep).join('/');
+			this.path = [directoryPosix, '**'].join('/');
+		}
+
+		this.isDirectory = true;
 	}
 
 	get name() {
@@ -59,7 +95,6 @@ export default class GlobPattern {
 	getMatches() {
 		let matches = globbySync(this.path, {
 			...this.options,
-			dot: true,
 			absolute: true,
 			onlyFiles: true,
 		});

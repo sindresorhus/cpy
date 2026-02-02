@@ -69,6 +69,8 @@ Type: `object`
 
 Options are passed to [globby](https://github.com/sindresorhus/globby#options).
 
+Note: Dotfiles are excluded by default. Set `dot: true` to include them.
+
 In addition, you can specify the below options.
 
 ##### cwd
@@ -143,7 +145,7 @@ await cpy('foo.js', 'destination', {
 ##### concurrency
 
 Type: `number`\
-Default: `(os.cpus().length || 1) * 2`
+Default: `os.availableParallelism()`
 
 Number of files being copied concurrently.
 

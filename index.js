@@ -115,6 +115,27 @@ const warnAboutLegacyRename = () => {
 	});
 };
 
+const hasSecondParameter = function_ => {
+	const source = Function.prototype.toString.call(function_).trim();
+	const arrowIndex = source.indexOf('=>');
+	const parenIndex = source.indexOf('(');
+	if (parenIndex === -1) {
+		return false;
+	}
+
+	if (arrowIndex !== -1 && parenIndex > arrowIndex) {
+		return false;
+	}
+
+	const endIndex = source.indexOf(')', parenIndex + 1);
+	if (endIndex === -1) {
+		return false;
+	}
+
+	const parameters = source.slice(parenIndex + 1, endIndex);
+	return parameters.includes(',');
+};
+
 const parseBasename = basename => {
 	const extension = path.extname(basename);
 	return {
@@ -235,7 +256,11 @@ const expandPatternsWithBraceExpansion = patterns => patterns.flatMap(pattern =>
 @param {string} to - Destination path
 @returns {boolean}
 */
-const isSelfCopy = (from, to) => path.resolve(to) === path.resolve(from);
+const resolveCopyPath = (filePath, cwd) => path.isAbsolute(filePath)
+	? path.normalize(filePath)
+	: path.resolve(cwd, filePath);
+
+const isSelfCopy = (from, to, cwd = process.cwd()) => resolveCopyPath(to, cwd) === resolveCopyPath(from, cwd);
 
 const relativizeWithin = (base, file) => {
 	const relativePath = path.relative(base, file);
@@ -291,13 +316,13 @@ const computeToForGlob = ({entry, destination, options}) => {
 	let toPath = path.join(destination, relativePath);
 
 	// Guard: never copy a file into itself (can truncate under concurrency).
-	if (isSelfCopy(from, toPath)) {
+	if (isSelfCopy(from, toPath, options.cwd)) {
 		const alternativeRelativePath = relativizeWithin(baseB, entry.path);
 		const alternativeToPath = alternativeRelativePath
 			? path.join(destination, alternativeRelativePath)
 			: path.join(destination, path.basename(entry.path));
 
-		toPath = isSelfCopy(from, alternativeToPath)
+		toPath = isSelfCopy(from, alternativeToPath, options.cwd)
 			? path.join(destination, path.basename(entry.path))
 			: alternativeToPath;
 	}
@@ -320,6 +345,14 @@ const computeToForNonGlob = ({entry, destination, options}) => {
 
 	const relativeToCwd = relativizeWithin(options.cwd, entry.path);
 	const insideCwd = relativeToCwd !== undefined;
+
+	if (entry.pattern.isDirectory && entry.pattern.symlinkTarget !== undefined) {
+		const relativeToTarget = path.relative(entry.pattern.symlinkTarget, entry.path);
+		if (!relativeToTarget.startsWith('..') && !path.isAbsolute(relativeToTarget)) {
+			const symlinkBase = entry.pattern.symlinkRelative ?? path.basename(entry.pattern.originalPath);
+			return path.join(baseDestination, symlinkBase, relativeToTarget);
+		}
+	}
 
 	// This check should treat different partitions on Windows as outside the cwd.
 	if (entry.pattern.isDirectory && !insideCwd) {
@@ -364,20 +397,36 @@ const renameFile = ({source, destination, rename}) => {
 	}
 
 	if (typeof rename === 'function') {
-		if (rename.length <= 1) {
+		const isLegacyRename = rename.length <= 1 && !hasSecondParameter(rename);
+		if (isLegacyRename) {
 			warnAboutLegacyRename();
 			const filename = path.basename(destination);
 			const result = rename(filename);
-			if (typeof result !== 'string') {
+			const isStringObject = result !== null
+				&& typeof result === 'object'
+				&& Object.prototype.toString.call(result) === '[object String]';
+			if (typeof result !== 'string' && !isStringObject) {
 				throw new TypeError(`Rename function with a single parameter must return a string, got ${typeof result}. Use rename(source, destination) for the object form.`);
 			}
 
-			return path.join(directory, assertRenameBasename(result));
+			return path.join(directory, assertRenameBasename(String(result)));
 		}
 
 		const sourceFile = createSourceFile(source);
 		const destinationFile = createDestinationFile(destination);
-		rename(sourceFile, destinationFile);
+		const result = rename(sourceFile, destinationFile);
+		if (result !== undefined) {
+			const isStringObject = result !== null
+				&& typeof result === 'object'
+				&& Object.prototype.toString.call(result) === '[object String]';
+			if (typeof result === 'string' || isStringObject) {
+				warnAboutLegacyRename();
+				return path.join(directory, assertRenameBasename(String(result)));
+			}
+
+			throw new TypeError(`Rename function must return a string (legacy) or undefined (object form), got ${typeof result}`);
+		}
+
 		return destinationFile.path;
 	}
 
@@ -460,10 +509,19 @@ export default function cpy(
 		let completedFiles = 0;
 		let completedSize = 0;
 
+		const rawPatterns = [source ?? []].flat();
+		if (rawPatterns.some(pattern => typeof pattern !== 'string')) {
+			throw new TypeError('`source` must be a string or an array of strings');
+		}
+
+		if (rawPatterns.includes('')) {
+			throw new CpyError('`source` must not contain empty strings');
+		}
+
 		/**
 		@type {GlobPattern[]}
 		*/
-		let patterns = expandPatternsWithBraceExpansion([source ?? []].flat())
+		let patterns = expandPatternsWithBraceExpansion(rawPatterns)
 			.map(string => string.replaceAll('\\', '/'));
 		const sources = patterns.filter(item => !item.startsWith('!'));
 		const ignore = patterns.filter(item => item.startsWith('!'));
@@ -498,8 +556,8 @@ export default function cpy(
 		/**
 		@param {import('copy-file').ProgressData} event
 		*/
-		const fileProgressHandler = event => {
-			const fileStatus = copyStatus.get(event.sourcePath) || {
+		const fileProgressHandler = (statusKey, event) => {
+			const fileStatus = copyStatus.get(statusKey) || {
 				writtenBytes: 0,
 				percent: 0,
 			};
@@ -515,7 +573,7 @@ export default function cpy(
 					completedFiles++;
 				}
 
-				copyStatus.set(event.sourcePath, {
+				copyStatus.set(statusKey, {
 					writtenBytes: event.writtenBytes,
 					percent: event.percent,
 				});
@@ -552,12 +610,19 @@ export default function cpy(
 			});
 
 			// Check for self-copy after rename has been applied
-			if (isSelfCopy(entry.path, to)) {
+			if (isSelfCopy(entry.path, to, options.cwd)) {
 				throw new CpyError(`Refusing to copy to itself: \`${entry.path}\``);
 			}
 
+			const statusKey = `${entry.path}\0${to}`;
+
 			try {
-				await copyFile(entry.path, to, {...options, onProgress: fileProgressHandler});
+				await copyFile(entry.path, to, {
+					...options,
+					onProgress(event) {
+						fileProgressHandler(statusKey, event);
+					},
+				});
 
 				if (options.preserveTimestamps) {
 					options.signal?.throwIfAborted();

@@ -130,7 +130,7 @@ export type Options = {
 	/**
 	Number of files being copied concurrently.
 
-	@default (os.cpus().length || 1) * 2
+	@default os.availableParallelism()
 	*/
 	readonly concurrency?: number;
 
@@ -242,7 +242,7 @@ Copy files.
 
 @param source - Files to copy. If any of the files do not exist, an error will be thrown (does not apply to globs).
 @param destination - Destination directory.
-@param options - In addition to the options defined here, options are passed to [globby](https://github.com/sindresorhus/globby#options).
+@param options - In addition to the options defined here, options are passed to [globby](https://github.com/sindresorhus/globby#options). Note: Dotfiles are excluded by default. Set `dot: true` to include them.
 
 @example
 ```

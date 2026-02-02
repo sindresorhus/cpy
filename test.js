@@ -57,6 +57,20 @@ test('reject Errors on missing `source`', async () => {
 	await assert.rejects(cpy([], 'destination'), expectError(CpyError, /`source`/));
 });
 
+test('reject non-string source entries', async () => {
+	await assert.rejects(
+		cpy([123], 'destination'),
+		expectError(TypeError, /`source` must be a string/),
+	);
+});
+
+test('reject empty string source', async () => {
+	await assert.rejects(
+		cpy([''], 'destination'),
+		expectError(CpyError, /empty strings/),
+	);
+});
+
 test('reject Errors on missing `destination`', async () => {
 	await assert.rejects(cpy('TARGET'), expectError(CpyError, /`destination`/));
 });
@@ -183,6 +197,42 @@ test('cwd with glob * and relative destination', async () => {
 	);
 });
 
+test('dotfiles are excluded by default', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd);
+	fs.writeFileSync(path.join(cwd, '.env'), 'SECRET');
+	fs.writeFileSync(path.join(cwd, 'visible.txt'), 'OK');
+
+	await cpy(['*'], 'destination', {cwd});
+
+	assert.ok(fs.existsSync(path.join(cwd, 'destination/visible.txt')));
+	assert.ok(!fs.existsSync(path.join(cwd, 'destination/.env')));
+});
+
+test('dotfiles are included when dot is true', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd);
+	fs.writeFileSync(path.join(cwd, '.env'), 'SECRET');
+	fs.writeFileSync(path.join(cwd, 'visible.txt'), 'OK');
+
+	await cpy(['*'], 'destination', {cwd, dot: true});
+
+	assert.ok(fs.existsSync(path.join(cwd, 'destination/visible.txt')));
+	assert.ok(fs.existsSync(path.join(cwd, 'destination/.env')));
+});
+
+test('explicit dotfile patterns are copied by default', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(path.join(cwd, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(cwd, '.env'), 'SECRET');
+	fs.writeFileSync(path.join(cwd, 'nested/.env'), 'SECRET-NESTED');
+
+	await cpy(['.env', '**/.env'], 'destination', {cwd});
+
+	assert.ok(fs.existsSync(path.join(cwd, 'destination/.env')));
+	assert.ok(fs.existsSync(path.join(cwd, 'destination/nested/.env')));
+});
+
 test('cwd with glob ./*', async () => {
 	fs.mkdirSync(path.join(context.tmp, 'cwd'));
 	fs.writeFileSync(
@@ -207,6 +257,19 @@ test('glob with redundant parent segments in pattern is normalized', async () =>
 	await cpy(['src/../src/**/*.js'], 'out', {cwd: context.tmp});
 
 	assert.ok(fs.existsSync(path.join(context.tmp, 'out/nested/file.js')));
+});
+
+test('glob refuses self-copy when destination is current directory', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.writeFileSync(path.join(cwd, 'same.txt'), 'same');
+
+	await assert.rejects(
+		cpy(['*'], '.', {cwd}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	assert.strictEqual(read(cwd, 'same.txt'), 'same');
 });
 
 test('do not overwrite', async () => {
@@ -598,6 +661,33 @@ test('rename filenames using a function', async () => {
 		read(context.tmp, 'source/bar.js'),
 		read(context.tmp, 'destination/subdir/source/prefix-bar.js'),
 	);
+});
+
+test('rename function with default parameter uses object form without warning', async () => {
+	writeFiles(context.tmp, {'foo.js': 'A'});
+
+	let warningCount = 0;
+	const warningHandler = warning => {
+		if (warning.code === 'CPY_RENAME_DEPRECATED') {
+			warningCount++;
+		}
+	};
+
+	process.on('warning', warningHandler);
+
+	try {
+		await cpy(['foo.js'], 'out', {
+			cwd: context.tmp,
+			rename(source, destination = {}) {
+				destination.nameWithoutExtension = `renamed-${source.nameWithoutExtension}`;
+			},
+		});
+	} finally {
+		process.off('warning', warningHandler);
+	}
+
+	assert.strictEqual(warningCount, 0);
+	assert.strictEqual(read(context.tmp, 'foo.js'), read(context.tmp, 'out/renamed-foo.js'));
 });
 
 test('rename function receives the basename argument with the file extension', async () => {
@@ -993,6 +1083,28 @@ test('reports copy progress of multiple files with onProgress option', async () 
 	assert.strictEqual(finalSourceBase, finalDestBase);
 	// Verify content equality between reported source and destination
 	assert.strictEqual(read(report.destinationPath), read(report.sourcePath));
+});
+
+test('reports progress correctly when copying the same source twice', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(path.join(cwd, 'source'), {recursive: true});
+	fs.writeFileSync(path.join(cwd, 'source/file.txt'), 'content');
+
+	let maxCompletedFiles = 0;
+	let maxPercent = 0;
+
+	await cpy(['source/*.txt', 'source/file.txt'], path.join(cwd, 'dest'), {
+		cwd,
+		onProgress(event) {
+			maxCompletedFiles = Math.max(maxCompletedFiles, event.completedFiles);
+			maxPercent = Math.max(maxPercent, event.percent);
+		},
+	});
+
+	assert.strictEqual(maxCompletedFiles, 2);
+	assert.strictEqual(maxPercent, 1);
+	assert.ok(fs.existsSync(path.join(cwd, 'dest/file.txt')));
+	assert.ok(fs.existsSync(path.join(cwd, 'dest/source/file.txt')));
 });
 
 test('reports correct completedSize with onProgress option', async () => {
@@ -1483,6 +1595,43 @@ test('signal option works with custom abort reason', async () => {
 	} catch (error) {
 		assert.strictEqual(error, customReason);
 	}
+});
+
+test('symlinked directory outside cwd preserves symlink path when following', async () => {
+	const root = temporaryDirectory();
+	const cwd = path.join(root, 'cwd');
+	const outside = path.join(root, 'outside');
+	const outsideTarget = path.join(outside, 'target');
+
+	try {
+		fs.mkdirSync(cwd, {recursive: true});
+		fs.mkdirSync(outsideTarget, {recursive: true});
+		fs.writeFileSync(path.join(outsideTarget, 'file.txt'), 'content');
+		fs.symlinkSync(outsideTarget, path.join(cwd, 'link'), 'dir');
+
+		await cpy('link', path.join(cwd, 'dest'), {
+			cwd,
+			followSymbolicLinks: true,
+		});
+
+		assert.ok(fs.existsSync(path.join(cwd, 'dest/link/file.txt')));
+		assert.ok(!fs.existsSync(path.join(cwd, 'dest/target/file.txt')));
+	} finally {
+		rimrafSync(root);
+	}
+});
+
+test('symlinked directory pattern expands when followSymbolicLinks is true', async () => {
+	fs.mkdirSync(path.join(context.tmp, 'target'));
+	fs.writeFileSync(path.join(context.tmp, 'target/file.txt'), 'content');
+	fs.symlinkSync(path.join(context.tmp, 'target'), path.join(context.tmp, 'link'), 'dir');
+
+	await cpy('link', path.join(context.tmp, 'dest'), {
+		cwd: context.tmp,
+		followSymbolicLinks: true,
+	});
+
+	assert.ok(fs.existsSync(path.join(context.tmp, 'dest/link/file.txt')));
 });
 
 test('followSymbolicLinks option', async () => {
