@@ -454,6 +454,11 @@ export default function cpy(
 		...defaultOptions,
 		...options,
 	};
+	if (typeof options.cwd !== 'string') {
+		throw new TypeError('`cwd` must be a string');
+	}
+
+	options.cwd = path.resolve(options.cwd);
 
 	/**
 	@param {GlobPattern[]} patterns
@@ -612,6 +617,26 @@ export default function cpy(
 			// Check for self-copy after rename has been applied
 			if (isSelfCopy(entry.path, to, options.cwd)) {
 				throw new CpyError(`Refusing to copy to itself: \`${entry.path}\``);
+			}
+
+			if (options.dryRun) {
+				completedFiles++;
+				const resolvedDestination = resolveCopyPath(to, options.cwd);
+				const progressData = {
+					totalFiles: entries.length,
+					percent: completedFiles / entries.length,
+					completedFiles,
+					completedSize,
+					sourcePath: entry.path,
+					destinationPath: resolvedDestination,
+				};
+
+				if (options.onProgress) {
+					options.onProgress(progressData);
+				}
+
+				progressEmitter.emit('progress', progressData);
+				return resolvedDestination;
 			}
 
 			const statusKey = `${entry.path}\0${to}`;

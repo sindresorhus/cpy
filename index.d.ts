@@ -193,6 +193,13 @@ export type Options = {
 	@default false
 	*/
 	readonly preserveTimestamps?: boolean;
+
+	/**
+	Skip copying and return the resolved destination paths.
+
+	@default false
+	*/
+	readonly dryRun?: boolean;
 } & Readonly<GlobOptions> & CopyFileOptions;
 
 export type ProgressData = {

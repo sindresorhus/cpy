@@ -1156,6 +1156,134 @@ test('returns destination path', async () => {
 	]);
 });
 
+test('dryRun returns destinations without copying', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd);
+	fs.writeFileSync(path.join(cwd, 'foo.txt'), 'content');
+
+	let report;
+	const destination = path.join(context.tmp, 'dest');
+	const to = await cpy(['foo.txt'], destination, {
+		cwd,
+		dryRun: true,
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	assert.deepStrictEqual(to, [
+		path.join(destination, 'foo.txt'),
+	]);
+	assert.ok(!fs.existsSync(destination));
+	assert.notStrictEqual(report, undefined);
+	assert.strictEqual(report.totalFiles, 1);
+	assert.strictEqual(report.completedFiles, 1);
+	assert.strictEqual(report.completedSize, 0);
+	assert.strictEqual(report.percent, 1);
+	assert.strictEqual(report.destinationPath, path.join(destination, 'foo.txt'));
+});
+
+test('dryRun honors filter', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd);
+	fs.writeFileSync(path.join(cwd, 'foo.txt'), 'content');
+	fs.writeFileSync(path.join(cwd, 'bar.txt'), 'content');
+
+	let report;
+	const to = await cpy(['*.txt'], 'dest', {
+		cwd,
+		dryRun: true,
+		filter(file) {
+			return file.name === 'foo.txt';
+		},
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	assert.deepStrictEqual(to, [
+		path.join(cwd, 'dest', 'foo.txt'),
+	]);
+	assert.ok(!fs.existsSync(path.join(cwd, 'dest')));
+	assert.notStrictEqual(report, undefined);
+	assert.strictEqual(report.totalFiles, 1);
+	assert.strictEqual(report.completedFiles, 1);
+	assert.strictEqual(report.destinationPath, path.join(cwd, 'dest', 'foo.txt'));
+});
+
+test('dryRun honors rename', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd);
+	fs.writeFileSync(path.join(cwd, 'foo.txt'), 'content');
+
+	const to = await cpy(['foo.txt'], 'dest', {
+		cwd,
+		dryRun: true,
+		rename(source, destination) {
+			destination.nameWithoutExtension = `renamed-${source.nameWithoutExtension}`;
+		},
+	});
+
+	assert.deepStrictEqual(to, [
+		path.join(cwd, 'dest', 'renamed-foo.txt'),
+	]);
+	assert.ok(!fs.existsSync(path.join(cwd, 'dest')));
+});
+
+test('dryRun honors flat', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(path.join(cwd, 'nested'), {recursive: true});
+	fs.writeFileSync(path.join(cwd, 'nested/foo.txt'), 'content');
+
+	const to = await cpy(['**/*.txt'], 'dest', {
+		cwd,
+		dryRun: true,
+		flat: true,
+	});
+
+	assert.deepStrictEqual(to, [
+		path.join(cwd, 'dest', 'foo.txt'),
+	]);
+	assert.ok(!fs.existsSync(path.join(cwd, 'dest')));
+});
+
+test('dryRun resolves relative destinations for glob patterns', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd);
+	fs.writeFileSync(path.join(cwd, 'foo.txt'), 'content');
+
+	let report;
+	const to = await cpy(['*'], 'dest', {
+		cwd,
+		dryRun: true,
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	assert.deepStrictEqual(to, [
+		path.join(cwd, 'dest', 'foo.txt'),
+	]);
+	assert.notStrictEqual(report, undefined);
+	assert.strictEqual(report.destinationPath, path.join(cwd, 'dest', 'foo.txt'));
+});
+
+test('dryRun resolves relative cwd and destination once', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd);
+	fs.writeFileSync(path.join(cwd, 'foo.txt'), 'content');
+
+	const relativeCwd = path.relative(process.cwd(), cwd);
+	const to = await cpy(['*'], 'dest', {
+		cwd: relativeCwd,
+		dryRun: true,
+	});
+
+	assert.deepStrictEqual(to, [
+		path.join(cwd, 'dest', 'foo.txt'),
+	]);
+});
+
 test('absolute directory source paths', async () => {
 	fs.mkdirSync(path.join(context.tmp, 'source'));
 	fs.mkdirSync(path.join(context.tmp, 'out'));
