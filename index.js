@@ -18,6 +18,7 @@ const defaultOptions = {
 	ignoreJunk: true,
 	flat: false,
 	cwd: process.cwd(),
+	update: false,
 };
 
 class Entry {
@@ -252,9 +253,9 @@ const expandPatternsWithBraceExpansion = patterns => patterns.flatMap(pattern =>
 ));
 
 /**
-@param {string} from - Source path
-@param {string} to - Destination path
-@returns {boolean}
+@param {string} filePath
+@param {string} cwd
+@returns {string}
 */
 const resolveCopyPath = (filePath, cwd) => path.isAbsolute(filePath)
 	? path.normalize(filePath)
@@ -360,16 +361,8 @@ const computeToForNonGlob = ({entry, destination, options}) => {
 		return path.join(baseDestination, path.basename(originalDir), path.relative(originalDir, entry.path));
 	}
 
-	if (!entry.pattern.isDirectory && entry.path === entry.relativePath) {
-		return path.join(baseDestination, path.basename(entry.pattern.originalPath), path.relative(entry.pattern.originalPath, entry.path));
-	}
-
 	if (!entry.pattern.isDirectory && options.flat) {
 		return path.join(baseDestination, path.basename(entry.pattern.originalPath));
-	}
-
-	if (!entry.pattern.isDirectory && !insideCwd) {
-		return path.join(baseDestination, entry.name);
 	}
 
 	if (relativeToCwd === undefined) {
@@ -454,11 +447,17 @@ export default function cpy(
 		...defaultOptions,
 		...options,
 	};
+	if (options.update !== undefined && typeof options.update !== 'boolean') {
+		throw new TypeError('`update` must be a boolean');
+	}
+
 	if (typeof options.cwd !== 'string') {
 		throw new TypeError('`cwd` must be a string');
 	}
 
 	options.cwd = path.resolve(options.cwd);
+
+	const shouldUseUpdate = options.update === true && options.overwrite !== false;
 
 	/**
 	@param {GlobPattern[]} patterns
@@ -466,7 +465,7 @@ export default function cpy(
 	@returns {Promise<Entry[]>}
 	*/
 	const getEntries = async (patterns, ignorePatterns) => {
-		let entries = [];
+		const entries = [];
 
 		for (const pattern of patterns) {
 			/**
@@ -488,13 +487,6 @@ export default function cpy(
 			for (const sourcePath of matches) {
 				entries.push(new Entry(sourcePath, path.relative(options.cwd, sourcePath), pattern));
 			}
-		}
-
-		if (options.filter !== undefined) {
-			entries = await pFilter(entries, options.filter, {
-				concurrency: 1024,
-				signal: options.signal,
-			});
 		}
 
 		return entries;
@@ -538,6 +530,159 @@ export default function cpy(
 		patterns = patterns.map(pattern => new GlobPattern(pattern, destination, {...options, ignore}));
 
 		entries = await getEntries(patterns, ignore);
+
+		const destinationPathByEntry = new Map();
+		const resolveDestinationPaths = entry => {
+			const cachedPaths = destinationPathByEntry.get(entry);
+			if (cachedPaths) {
+				return cachedPaths;
+			}
+
+			let destinationPath = preprocessDestinationPath({
+				entry,
+				destination,
+				options,
+			});
+
+			// Apply rename after computing the base destination path
+			destinationPath = renameFile({
+				source: entry.path,
+				destination: destinationPath,
+				rename: options.rename,
+			});
+
+			// Check for self-copy after rename has been applied
+			if (isSelfCopy(entry.path, destinationPath, options.cwd)) {
+				throw new CpyError(`Refusing to copy to itself: \`${entry.path}\``);
+			}
+
+			const resolvedDestinationPath = resolveCopyPath(destinationPath, options.cwd);
+			const paths = {destinationPath, resolvedDestinationPath};
+			destinationPathByEntry.set(entry, paths);
+			return paths;
+		};
+
+		const createFilterContext = entry => ({
+			get destinationPath() {
+				return resolveDestinationPaths(entry).resolvedDestinationPath;
+			},
+		});
+
+		if (options.filter !== undefined) {
+			const filterFunction = options.filter;
+			entries = await pFilter(entries, entry => filterFunction(entry, createFilterContext(entry)), {
+				concurrency: 1024,
+				signal: options.signal,
+			});
+		}
+
+		if (shouldUseUpdate && entries.length > 0) {
+			const createUpdateError = (entry, destinationPath, error) => {
+				const reason = error?.message ?? String(error);
+				return new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${destinationPath}\`: ${reason}`, {cause: error});
+			};
+
+			const entryDataList = entries.map((entry, index) => {
+				const {destinationPath, resolvedDestinationPath} = resolveDestinationPaths(entry);
+				return {
+					entry,
+					destinationPath,
+					resolvedDestinationPath,
+					index,
+				};
+			});
+
+			const entryByDestinationPath = new Map();
+			for (const entryData of entryDataList) {
+				if (!entryByDestinationPath.has(entryData.resolvedDestinationPath)) {
+					entryByDestinationPath.set(entryData.resolvedDestinationPath, entryData.entry);
+				}
+			}
+
+			const getDestinationState = async destinationPath => {
+				const entry = entryByDestinationPath.get(destinationPath);
+
+				let stats;
+				try {
+					stats = await fs.stat(destinationPath);
+				} catch (error) {
+					if (error.code === 'ENOENT') {
+						return {exists: false};
+					}
+
+					throw createUpdateError(entry, destinationPath, error);
+				}
+
+				if (!stats.isFile()) {
+					return {nonFile: true};
+				}
+
+				return {
+					exists: true,
+					mtimeMs: stats.mtimeMs,
+					size: stats.size,
+				};
+			};
+
+			const destinationPaths = [...new Set(entryDataList.map(({resolvedDestinationPath}) => resolvedDestinationPath))];
+			const destinationStates = await Promise.all(destinationPaths.map(async destinationPath => [destinationPath, await getDestinationState(destinationPath)]));
+			const destinationStateByPath = new Map(destinationStates);
+
+			const entriesWithStats = await Promise.all(entryDataList.map(async entryData => {
+				let sourceStats;
+				try {
+					sourceStats = await fs.stat(entryData.entry.path);
+				} catch (error) {
+					throw createUpdateError(entryData.entry, entryData.destinationPath, error);
+				}
+
+				return {...entryData, sourceStats};
+			}));
+
+			const bestCandidateByDestination = new Map();
+			const registerNonFileCandidate = entryData => {
+				if (!bestCandidateByDestination.has(entryData.resolvedDestinationPath)) {
+					bestCandidateByDestination.set(entryData.resolvedDestinationPath, {
+						entry: entryData.entry,
+						index: entryData.index,
+						mtimeMs: Number.NEGATIVE_INFINITY,
+					});
+				}
+			};
+
+			for (const entryData of entriesWithStats) {
+				const destinationState = destinationStateByPath.get(entryData.resolvedDestinationPath);
+				if (destinationState?.nonFile) {
+					registerNonFileCandidate(entryData);
+					continue;
+				}
+
+				const shouldCopy = !destinationState?.exists
+					|| entryData.sourceStats.mtimeMs > destinationState.mtimeMs
+					|| (entryData.sourceStats.mtimeMs === destinationState.mtimeMs && entryData.sourceStats.size !== destinationState.size);
+
+				if (!shouldCopy) {
+					continue;
+				}
+
+				const existingCandidate = bestCandidateByDestination.get(entryData.resolvedDestinationPath);
+				const isNewerCandidate = !existingCandidate
+					|| entryData.sourceStats.mtimeMs > existingCandidate.mtimeMs
+					|| (entryData.sourceStats.mtimeMs === existingCandidate.mtimeMs && entryData.index > existingCandidate.index);
+				if (!isNewerCandidate) {
+					continue;
+				}
+
+				bestCandidateByDestination.set(entryData.resolvedDestinationPath, {
+					entry: entryData.entry,
+					index: entryData.index,
+					mtimeMs: entryData.sourceStats.mtimeMs,
+				});
+			}
+
+			const selectedEntries = new Set([...bestCandidateByDestination.values()].map(candidate => candidate.entry));
+			entries = entries.filter(entry => selectedEntries.has(entry));
+		}
 
 		options.signal?.throwIfAborted();
 
@@ -601,34 +746,17 @@ export default function cpy(
 		};
 
 		const copyFileMapper = async entry => {
-			let to = preprocessDestinationPath({
-				entry,
-				destination,
-				options,
-			});
-
-			// Apply rename after computing the base destination path
-			to = renameFile({
-				source: entry.path,
-				destination: to,
-				rename: options.rename,
-			});
-
-			// Check for self-copy after rename has been applied
-			if (isSelfCopy(entry.path, to, options.cwd)) {
-				throw new CpyError(`Refusing to copy to itself: \`${entry.path}\``);
-			}
+			const {destinationPath, resolvedDestinationPath} = resolveDestinationPaths(entry);
 
 			if (options.dryRun) {
 				completedFiles++;
-				const resolvedDestination = resolveCopyPath(to, options.cwd);
 				const progressData = {
 					totalFiles: entries.length,
 					percent: completedFiles / entries.length,
 					completedFiles,
 					completedSize,
 					sourcePath: entry.path,
-					destinationPath: resolvedDestination,
+					destinationPath: resolvedDestinationPath,
 				};
 
 				if (options.onProgress) {
@@ -636,13 +764,13 @@ export default function cpy(
 				}
 
 				progressEmitter.emit('progress', progressData);
-				return resolvedDestination;
+				return resolvedDestinationPath;
 			}
 
-			const statusKey = `${entry.path}\0${to}`;
+			const statusKey = `${entry.path}\0${destinationPath}`;
 
 			try {
-				await copyFile(entry.path, to, {
+				await copyFile(entry.path, destinationPath, {
 					...options,
 					onProgress(event) {
 						fileProgressHandler(statusKey, event);
@@ -652,14 +780,14 @@ export default function cpy(
 				if (options.preserveTimestamps) {
 					options.signal?.throwIfAborted();
 					const stats = await fs.stat(entry.path);
-					await fs.utimes(to, stats.atime, stats.mtime);
+					await fs.utimes(destinationPath, stats.atime, stats.mtime);
 				}
 			} catch (error) {
 				options.signal?.throwIfAborted();
-				throw new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${to}\`: ${error.message}`, {cause: error});
+				throw new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${destinationPath}\`: ${error.message}`, {cause: error});
 			}
 
-			return to;
+			return destinationPath;
 		};
 
 		return pMap(entries, copyFileMapper, {

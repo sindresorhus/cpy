@@ -146,6 +146,57 @@ test('copy array of files with async filter', async () => {
 	assert.strictEqual(read('package.json'), read(context.tmp, 'package.json'));
 });
 
+test('filter receives destination path', async () => {
+	await cpy(['license'], context.tmp, {
+		rename: 'renamed.txt',
+		filter(file, {destinationPath}) {
+			assert.strictEqual(destinationPath, path.join(context.tmp, 'renamed.txt'));
+			return true;
+		},
+	});
+
+	assert.strictEqual(read('license'), read(context.tmp, 'renamed.txt'));
+});
+
+test('filter receives resolved destination path for relative cwd and destination', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.writeFileSync(path.join(cwd, 'foo.txt'), 'content');
+
+	const relativeCwd = path.relative(process.cwd(), cwd);
+
+	await cpy(['*'], 'dest', {
+		cwd: relativeCwd,
+		filter(file, {destinationPath}) {
+			assert.strictEqual(file.path, path.join(cwd, 'foo.txt'));
+			assert.strictEqual(destinationPath, path.join(cwd, 'dest', 'foo.txt'));
+			return true;
+		},
+	});
+
+	assert.strictEqual(read(cwd, 'foo.txt'), read(cwd, 'dest/foo.txt'));
+});
+
+test('filter receives destination path after rename mutation', async () => {
+	writeFiles(context.tmp, {'foo.txt': 'content'});
+
+	let observedDestinationPath;
+
+	await cpy(['foo.txt'], 'dest', {
+		cwd: context.tmp,
+		rename(source, destination) {
+			destination.nameWithoutExtension = `${source.nameWithoutExtension}-renamed`;
+		},
+		filter(_file, {destinationPath}) {
+			observedDestinationPath = destinationPath;
+			return true;
+		},
+	});
+
+	assert.strictEqual(observedDestinationPath, path.join(context.tmp, 'dest', 'foo-renamed.txt'));
+	assert.strictEqual(read(context.tmp, 'foo.txt'), read(context.tmp, 'dest/foo-renamed.txt'));
+});
+
 test('cwd', async () => {
 	fs.mkdirSync(path.join(context.tmp, 'cwd'));
 	fs.writeFileSync(
@@ -278,6 +329,127 @@ test('do not overwrite', async () => {
 	await assert.rejects(cpy(['license'], context.tmp, {overwrite: false}));
 
 	assert.strictEqual(read(context.tmp, 'license'), '');
+});
+
+test('update copies only when source is newer or size differs', async () => {
+	const sourceDirectory = path.join(context.tmp, 'source');
+	const destinationDirectory = path.join(context.tmp, 'destination');
+	const sourcePath = path.join(sourceDirectory, 'file.txt');
+	const destinationPath = path.join(destinationDirectory, 'file.txt');
+
+	fs.mkdirSync(sourceDirectory, {recursive: true});
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+	fs.writeFileSync(sourcePath, 'source-old');
+	fs.writeFileSync(destinationPath, 'destination-newer');
+
+	const olderTime = new Date('2020-01-01T00:00:00Z');
+	const newerTime = new Date('2020-01-02T00:00:00Z');
+	fs.utimesSync(sourcePath, olderTime, olderTime);
+	fs.utimesSync(destinationPath, newerTime, newerTime);
+
+	await cpy(['file.txt'], destinationDirectory, {
+		cwd: sourceDirectory,
+		update: true,
+	});
+
+	assert.strictEqual(read(destinationDirectory, 'file.txt'), 'destination-newer');
+
+	fs.writeFileSync(sourcePath, 'source-newer');
+	const newestTime = new Date('2020-01-03T00:00:00Z');
+	fs.utimesSync(sourcePath, newestTime, newestTime);
+
+	await cpy(['file.txt'], destinationDirectory, {
+		cwd: sourceDirectory,
+		update: true,
+	});
+
+	assert.strictEqual(read(destinationDirectory, 'file.txt'), 'source-newer');
+
+	fs.writeFileSync(sourcePath, 'short');
+	fs.writeFileSync(destinationPath, 'this is longer');
+	const sameTime = new Date('2020-01-04T00:00:00Z');
+	fs.utimesSync(sourcePath, sameTime, sameTime);
+	fs.utimesSync(destinationPath, sameTime, sameTime);
+
+	await cpy(['file.txt'], destinationDirectory, {
+		cwd: sourceDirectory,
+		update: true,
+	});
+
+	assert.strictEqual(read(destinationDirectory, 'file.txt'), 'short');
+});
+
+test('update skips when mtime and size match', async () => {
+	const sourceDirectory = path.join(context.tmp, 'source');
+	const destinationDirectory = path.join(context.tmp, 'destination');
+	const sourcePath = path.join(sourceDirectory, 'file.txt');
+	const destinationPath = path.join(destinationDirectory, 'file.txt');
+
+	fs.mkdirSync(sourceDirectory, {recursive: true});
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+
+	fs.writeFileSync(sourcePath, 'same');
+	fs.writeFileSync(destinationPath, 'diff');
+
+	const sameTime = new Date('2020-01-05T00:00:00Z');
+	fs.utimesSync(sourcePath, sameTime, sameTime);
+	fs.utimesSync(destinationPath, sameTime, sameTime);
+
+	await cpy(['file.txt'], destinationDirectory, {
+		cwd: sourceDirectory,
+		update: true,
+	});
+
+	assert.strictEqual(read(destinationDirectory, 'file.txt'), 'diff');
+});
+
+test('update is ignored when overwrite is false', async () => {
+	const sourceDirectory = path.join(context.tmp, 'source');
+	const destinationDirectory = path.join(context.tmp, 'destination');
+	const sourcePath = path.join(sourceDirectory, 'file.txt');
+	const destinationPath = path.join(destinationDirectory, 'file.txt');
+
+	fs.mkdirSync(sourceDirectory, {recursive: true});
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+	fs.writeFileSync(sourcePath, 'source');
+	fs.writeFileSync(destinationPath, 'destination');
+
+	await assert.rejects(
+		cpy(['file.txt'], destinationDirectory, {
+			cwd: sourceDirectory,
+			update: true,
+			overwrite: false,
+		}),
+		expectError(CpyError, /EEXIST|already exists/),
+	);
+});
+
+test('update selects newest when destinations collide', async () => {
+	const sourceDirectory = path.join(context.tmp, 'source');
+	const olderDirectory = path.join(sourceDirectory, 'older');
+	const newerDirectory = path.join(sourceDirectory, 'newer');
+	const destinationDirectory = path.join(context.tmp, 'destination');
+
+	fs.mkdirSync(olderDirectory, {recursive: true});
+	fs.mkdirSync(newerDirectory, {recursive: true});
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+
+	const olderPath = path.join(olderDirectory, 'file.txt');
+	const newerPath = path.join(newerDirectory, 'file.txt');
+	fs.writeFileSync(olderPath, 'older');
+	fs.writeFileSync(newerPath, 'newer');
+
+	const olderTime = new Date('2020-01-05T00:00:00Z');
+	const newerTime = new Date('2020-01-06T00:00:00Z');
+	fs.utimesSync(olderPath, olderTime, olderTime);
+	fs.utimesSync(newerPath, newerTime, newerTime);
+
+	await cpy([newerPath, olderPath], destinationDirectory, {
+		flat: true,
+		update: true,
+	});
+
+	assert.strictEqual(read(destinationDirectory, 'file.txt'), 'newer');
 });
 
 test('do not keep path structure', async () => {
@@ -783,6 +955,34 @@ test('rename function: destination path cannot change directories', async () => 
 			},
 		}),
 		expectError(TypeError, /must stay within the destination directory/),
+	);
+});
+
+test('rename function: destination path cannot traverse outside the destination directory', async () => {
+	writeFiles(context.tmp, {'foo.js': 'console.log("foo");'});
+
+	await assert.rejects(
+		cpy(['foo.js'], 'destination', {
+			cwd: context.tmp,
+			rename(_source, destination) {
+				destination.path = '../evil.js';
+			},
+		}),
+		expectError(TypeError, /must stay within the destination directory/),
+	);
+});
+
+test('rename function: destination nameWithoutExtension rejects path separators', async () => {
+	writeFiles(context.tmp, {'foo.js': 'console.log("foo");'});
+
+	await assert.rejects(
+		cpy(['foo.js'], 'destination', {
+			cwd: context.tmp,
+			rename(_source, destination) {
+				destination.nameWithoutExtension = 'dir/evil';
+			},
+		}),
+		expectError(TypeError, /must not contain path separators|filename/),
 	);
 });
 

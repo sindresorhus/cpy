@@ -87,6 +87,13 @@ Default: `true`
 
 Overwrite existing files.
 
+##### update
+
+Type: `boolean`\
+Default: `false`
+
+Only overwrite when the source is newer, or when sizes differ with the same modification time. Ignored when `overwrite` is `false`.
+
 ##### flat
 
 Type: `boolean`\
@@ -162,7 +169,7 @@ Type: `Function`
 
 Function to filter files to copy.
 
-Receives a source file object as the first argument.
+Receives a source file object and a context object with the resolved destination path.
 
 Return true to include, false to exclude. You can also return a Promise that resolves to true or false.
 
@@ -170,7 +177,7 @@ Return true to include, false to exclude. You can also return a Promise that res
 import cpy from 'cpy';
 
 await cpy('foo', 'destination', {
-	filter: file => file.extension !== 'nocopy'
+	filter: (file, {destinationPath}) => file.extension !== 'nocopy'
 });
 ```
 

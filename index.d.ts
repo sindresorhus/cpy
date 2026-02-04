@@ -38,6 +38,15 @@ export type Entry = {
 	readonly extension: string;
 };
 
+export type FilterContext = {
+	/**
+	Resolved destination path for the file.
+
+	@example '/tmp/dir/foo.js'
+	*/
+	readonly destinationPath: string;
+};
+
 export type RenameFile = {
 	/**
 	Resolved path to the file.
@@ -106,6 +115,15 @@ export type Options = {
 	readonly flat?: boolean;
 
 	/**
+	Only overwrite when the source is newer, or when sizes differ with the same modification time.
+
+	Ignored when `overwrite` is false.
+
+	@default false
+	*/
+	readonly update?: boolean;
+
+	/**
 	Filename or function used to rename every file in `source`. Use a two-argument function to receive a frozen source file object and a mutable destination file object. The destination path must stay within the original destination directory. The legacy single-argument form is deprecated, emits a warning, and will be removed in the next major release.
 
 	@example
@@ -144,7 +162,7 @@ export type Options = {
 	/**
 	Function to filter files to copy.
 
-	Receives a source file object as the first argument.
+	Receives a source file object and a context object with the resolved destination path.
 
 	Return true to include, false to exclude. You can also return a Promise that resolves to true or false.
 
@@ -153,11 +171,11 @@ export type Options = {
 	import cpy from 'cpy';
 
 	await cpy('foo', 'destination', {
-		filter: file => file.extension !== 'nocopy'
+		filter: (file, {destinationPath}) => file.extension !== 'nocopy'
 	});
 	```
 	*/
-	readonly filter?: (file: Entry) => boolean | Promise<boolean>;
+	readonly filter?: (file: Entry, context: FilterContext) => boolean | Promise<boolean>;
 
 	/**
 	The given function is called whenever there is measurable progress.
