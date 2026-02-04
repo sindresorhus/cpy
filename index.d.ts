@@ -101,27 +101,52 @@ export type Options = {
 	readonly cwd?: string;
 
 	/**
+	Overwrite existing files.
+
+	@default true
+	*/
+	readonly overwrite?: boolean;
+
+	/**
+	Skip files when the destination path already exists.
+
+	This option takes precedence over `overwrite`.
+
+	@default false
+	*/
+	readonly ignoreExisting?: boolean;
+
+	/**
+	Only overwrite when the source is newer, or when sizes differ with the same modification time.
+
+	Ignored when `overwrite` is `false` or `ignoreExisting` is `true`.
+
+	@default false
+	*/
+	readonly update?: boolean;
+
+	/**
+	Flatten directory structure. All copied files will be put in the same directory.
+
+	@default false
+
+	@example
+	```
+	import cpy from 'cpy';
+
+	await cpy('src/**\/*.js', 'destination', {
+		flat: true
+	});
+	```
+	*/
+	readonly flat?: boolean;
+
+	/**
 	Choose how destination paths are calculated for patterns. By default, globs are resolved relative to their parent and explicit paths are resolved relative to `cwd`. Set to `'pattern'` to make explicit paths behave like globs, or `'cwd'` to make globs behave like explicit paths.
 
 	@default undefined
 	*/
 	readonly base?: 'cwd' | 'pattern';
-
-	/**
-	Flatten directory tree.
-
-	@default false
-	*/
-	readonly flat?: boolean;
-
-	/**
-	Only overwrite when the source is newer, or when sizes differ with the same modification time.
-
-	Ignored when `overwrite` is false.
-
-	@default false
-	*/
-	readonly update?: boolean;
 
 	/**
 	Filename or function used to rename every file in `source`. Use a two-argument function to receive a frozen source file object and a mutable destination file object. The destination path must stay within the original destination directory. The legacy single-argument form is deprecated, emits a warning, and will be removed in the next major release.
@@ -153,7 +178,7 @@ export type Options = {
 	readonly concurrency?: number;
 
 	/**
-	Ignore junk files.
+	Ignores [junk](https://github.com/sindresorhus/junk) files.
 
 	@default true
 	*/
@@ -218,7 +243,7 @@ export type Options = {
 	@default false
 	*/
 	readonly dryRun?: boolean;
-} & Readonly<GlobOptions> & CopyFileOptions;
+} & Readonly<GlobOptions> & Omit<CopyFileOptions, 'overwrite'>;
 
 export type ProgressData = {
 	/**
@@ -284,7 +309,7 @@ await cpy('node_modules', 'destination');
 // Copy node_modules content to destination
 await cpy('node_modules/**', 'destination');
 
-// Copy node_modules structure but skip all files except any .json files
+// Copy node_modules structure but skip all files except .json files
 await cpy('node_modules/**\/*.json', 'destination');
 
 // Copy all png files into destination without keeping directory structure

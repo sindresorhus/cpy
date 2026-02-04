@@ -1,11 +1,18 @@
 import {expectType} from 'tsd';
-import cpy, {type ProgressEmitter, type ProgressData, type Entry} from './index.js';
+import cpy, {
+	type Entry,
+	type FilterContext,
+	type ProgressData,
+	type ProgressEmitter,
+	type RenameDestination,
+	type RenameSource,
+} from './index.js';
 
 expectType<Promise<string[]> & ProgressEmitter>(cpy(['source/*.png', '!source/goat.png'], 'destination'));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {rename: 'foobar'}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {rename: (basename: string) => `prefix-${basename}`}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {
-	rename(source, destination) {
+	rename(source: RenameSource, destination: RenameDestination) {
 		expectType<string>(source.path);
 		expectType<string>(source.name);
 		expectType<string>(source.nameWithoutExtension);
@@ -22,11 +29,12 @@ expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {ba
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {base: 'cwd'}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {flat: true}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {overwrite: false}));
+expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {ignoreExisting: true}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {update: true}));
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {concurrency: 2}));
 
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {
-	filter(file, {destinationPath}) {
+	filter(file: Entry, {destinationPath}: FilterContext) {
 		expectType<Entry>(file);
 
 		expectType<string>(file.path);
@@ -41,7 +49,7 @@ expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {filter: async (_file: Entry) => true}));
 
 expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {
-	onProgress(progress) {
+	onProgress(progress: ProgressData) {
 		expectType<ProgressData>(progress);
 
 		expectType<number>(progress.completedFiles);
@@ -55,7 +63,7 @@ expectType<Promise<string[]> & ProgressEmitter>(cpy('foo.js', 'destination', {
 
 // Test that deprecated .on still works but is deprecated
 // eslint-disable-next-line @typescript-eslint/no-deprecated
-expectType<Promise<string[]>>(cpy('foo.js', 'destination').on('progress', progress => {
+expectType<Promise<string[]>>(cpy('foo.js', 'destination').on('progress', (progress: ProgressData) => {
 	expectType<ProgressData>(progress);
 
 	expectType<number>(progress.completedFiles);

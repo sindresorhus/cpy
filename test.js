@@ -331,6 +331,169 @@ test('do not overwrite', async () => {
 	assert.strictEqual(read(context.tmp, 'license'), '');
 });
 
+test('ignore existing files', async () => {
+	const destinationDirectory = path.join(context.tmp, 'destination');
+
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+	fs.writeFileSync(path.join(context.tmp, 'existing.txt'), 'source');
+	fs.writeFileSync(path.join(context.tmp, 'new.txt'), 'new');
+	fs.writeFileSync(path.join(destinationDirectory, 'existing.txt'), 'destination');
+
+	const results = await cpy(['existing.txt', 'new.txt'], destinationDirectory, {
+		cwd: context.tmp,
+		ignoreExisting: true,
+	});
+
+	assert.strictEqual(read(destinationDirectory, 'existing.txt'), 'destination');
+	assert.strictEqual(read(destinationDirectory, 'new.txt'), 'new');
+	assert.deepStrictEqual(results, [path.join(destinationDirectory, 'new.txt')]);
+});
+
+test('ignore existing skips destination directories', async () => {
+	const destinationDirectory = path.join(context.tmp, 'destination');
+
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+	fs.writeFileSync(path.join(context.tmp, 'existing.txt'), 'source');
+	fs.writeFileSync(path.join(context.tmp, 'new.txt'), 'new');
+	fs.mkdirSync(path.join(destinationDirectory, 'existing.txt'));
+
+	const results = await cpy(['existing.txt', 'new.txt'], destinationDirectory, {
+		cwd: context.tmp,
+		ignoreExisting: true,
+	});
+
+	assert.ok(fs.statSync(path.join(destinationDirectory, 'existing.txt')).isDirectory());
+	assert.strictEqual(read(destinationDirectory, 'new.txt'), 'new');
+	assert.deepStrictEqual(results, [path.join(destinationDirectory, 'new.txt')]);
+});
+
+test('ignore existing in dryRun excludes existing destinations', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destinationDirectory = path.join(context.tmp, 'destination');
+
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+	fs.writeFileSync(path.join(cwd, 'existing.txt'), 'source');
+	fs.writeFileSync(path.join(cwd, 'new.txt'), 'new');
+	fs.writeFileSync(path.join(destinationDirectory, 'existing.txt'), 'destination');
+
+	const results = await cpy(['existing.txt', 'new.txt'], destinationDirectory, {
+		cwd,
+		ignoreExisting: true,
+		dryRun: true,
+	});
+
+	assert.deepStrictEqual(results, [path.join(destinationDirectory, 'new.txt')]);
+	assert.strictEqual(read(destinationDirectory, 'existing.txt'), 'destination');
+	assert.ok(!fs.existsSync(path.join(destinationDirectory, 'new.txt')));
+});
+
+test('ignore existing skips destination symlink', async () => {
+	const destinationDirectory = path.join(context.tmp, 'destination');
+	const targetPath = path.join(context.tmp, 'target.txt');
+
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+	fs.writeFileSync(path.join(context.tmp, 'source.txt'), 'source');
+	fs.writeFileSync(targetPath, 'target');
+	fs.symlinkSync(targetPath, path.join(destinationDirectory, 'source.txt'));
+
+	const results = await cpy(['source.txt'], destinationDirectory, {
+		cwd: context.tmp,
+		ignoreExisting: true,
+	});
+
+	assert.deepStrictEqual(results, []);
+	assert.ok(fs.lstatSync(path.join(destinationDirectory, 'source.txt')).isSymbolicLink());
+	assert.strictEqual(fs.readFileSync(path.join(destinationDirectory, 'source.txt'), 'utf8'), 'target');
+});
+
+test('ignore existing skips when rename targets existing destination', async () => {
+	const destinationDirectory = path.join(context.tmp, 'destination');
+
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+	fs.writeFileSync(path.join(context.tmp, 'source.txt'), 'source');
+	fs.writeFileSync(path.join(destinationDirectory, 'renamed.txt'), 'destination');
+
+	const results = await cpy(['source.txt'], destinationDirectory, {
+		cwd: context.tmp,
+		ignoreExisting: true,
+		rename(_source, destination) {
+			destination.name = 'renamed.txt';
+		},
+	});
+
+	assert.deepStrictEqual(results, []);
+	assert.strictEqual(read(destinationDirectory, 'renamed.txt'), 'destination');
+	assert.ok(!fs.existsSync(path.join(destinationDirectory, 'source.txt')));
+});
+
+test('ignore existing overrides overwrite', async () => {
+	const destinationDirectory = path.join(context.tmp, 'destination');
+
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+	fs.writeFileSync(path.join(context.tmp, 'existing.txt'), 'source');
+	fs.writeFileSync(path.join(destinationDirectory, 'existing.txt'), 'destination');
+
+	const results = await cpy(['existing.txt'], destinationDirectory, {
+		cwd: context.tmp,
+		ignoreExisting: true,
+		overwrite: true,
+	});
+
+	assert.deepStrictEqual(results, []);
+	assert.strictEqual(read(destinationDirectory, 'existing.txt'), 'destination');
+});
+
+test('ignore existing de-duplicates destination paths', async () => {
+	const destinationDirectory = path.join(context.tmp, 'destination');
+
+	writeFiles(context.tmp, {
+		'first/file.txt': 'first',
+		'second/file.txt': 'second',
+	});
+
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+
+	const results = await cpy(['first/file.txt', 'second/file.txt'], destinationDirectory, {
+		cwd: context.tmp,
+		flat: true,
+		ignoreExisting: true,
+	});
+
+	assert.strictEqual(read(destinationDirectory, 'file.txt'), 'first');
+	assert.deepStrictEqual(results, [path.join(destinationDirectory, 'file.txt')]);
+});
+
+test('ignore existing tolerates destination created during copy', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destinationDirectory = path.join(context.tmp, 'destination');
+	const slowData = crypto.randomBytes((1024 * 1024) + 1);
+
+	fs.mkdirSync(cwd, {recursive: true});
+	fs.mkdirSync(destinationDirectory, {recursive: true});
+	fs.writeFileSync(path.join(cwd, 'slow.txt'), slowData);
+	fs.writeFileSync(path.join(cwd, 'fast.txt'), 'fast');
+
+	let created = false;
+	const results = await cpy(['slow.txt', 'fast.txt'], destinationDirectory, {
+		cwd,
+		ignoreExisting: true,
+		concurrency: 1,
+		onProgress() {
+			if (created) {
+				return;
+			}
+
+			created = true;
+			fs.writeFileSync(path.join(destinationDirectory, 'fast.txt'), 'destination');
+		},
+	});
+
+	assert.deepStrictEqual(results, [path.join(destinationDirectory, 'slow.txt')]);
+	assert.deepStrictEqual(fs.readFileSync(path.join(destinationDirectory, 'slow.txt')), slowData);
+	assert.strictEqual(read(destinationDirectory, 'fast.txt'), 'destination');
+});
+
 test('update copies only when source is newer or size differs', async () => {
 	const sourceDirectory = path.join(context.tmp, 'source');
 	const destinationDirectory = path.join(context.tmp, 'destination');

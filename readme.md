@@ -34,11 +34,18 @@ await cpy('node_modules', 'destination');
 // Copy node_modules content to destination
 await cpy('node_modules/**', 'destination');
 
-// Copy node_modules structure but skip all files except package.json files
+// Copy node_modules structure but skip all files except .json files
 await cpy('node_modules/**/*.json', 'destination');
 
 // Copy all png files into destination without keeping directory structure
 await cpy('**/*.png', 'destination', {flat: true});
+
+// Progress reporting
+await cpy('source/**', 'destination', {
+	onProgress: progress => {
+		console.log(`Progress: ${Math.round(progress.percent * 100)}%`);
+	}
+});
 
 console.log('Files copied!');
 ```
@@ -87,12 +94,21 @@ Default: `true`
 
 Overwrite existing files.
 
+##### ignoreExisting
+
+Type: `boolean`\
+Default: `false`
+
+Skip files when the destination path already exists.
+
+This option takes precedence over `overwrite`.
+
 ##### update
 
 Type: `boolean`\
 Default: `false`
 
-Only overwrite when the source is newer, or when sizes differ with the same modification time. Ignored when `overwrite` is `false`.
+Only overwrite when the source is newer, or when sizes differ with the same modification time. Ignored when `overwrite` is `false` or `ignoreExisting` is `true`.
 
 ##### flat
 
@@ -216,6 +232,13 @@ Type: `boolean`\
 Default: `false`
 
 Preserve file access and modification timestamps when copying.
+
+##### dryRun
+
+Type: `boolean`\
+Default: `false`
+
+Skip copying and return the resolved destination paths.
 
 ##### Source file object
 

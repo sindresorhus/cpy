@@ -19,6 +19,7 @@ const defaultOptions = {
 	flat: false,
 	cwd: process.cwd(),
 	update: false,
+	ignoreExisting: false,
 };
 
 class Entry {
@@ -451,13 +452,23 @@ export default function cpy(
 		throw new TypeError('`update` must be a boolean');
 	}
 
+	if (options.ignoreExisting !== undefined && typeof options.ignoreExisting !== 'boolean') {
+		throw new TypeError('`ignoreExisting` must be a boolean');
+	}
+
 	if (typeof options.cwd !== 'string') {
 		throw new TypeError('`cwd` must be a string');
 	}
 
 	options.cwd = path.resolve(options.cwd);
 
-	const shouldUseUpdate = options.update === true && options.overwrite !== false;
+	const shouldIgnoreExisting = options.ignoreExisting === true;
+
+	if (shouldIgnoreExisting) {
+		options.overwrite = false;
+	}
+
+	const shouldUseUpdate = options.update === true && options.overwrite !== false && !shouldIgnoreExisting;
 
 	/**
 	@param {GlobPattern[]} patterns
@@ -571,6 +582,38 @@ export default function cpy(
 		if (options.filter !== undefined) {
 			const filterFunction = options.filter;
 			entries = await pFilter(entries, entry => filterFunction(entry, createFilterContext(entry)), {
+				concurrency: 1024,
+				signal: options.signal,
+			});
+		}
+
+		if (shouldIgnoreExisting && entries.length > 0) {
+			const destinationPaths = new Set();
+			const createIgnoreExistingError = (entry, destinationPath, error) => {
+				const reason = error?.message ?? String(error);
+				return new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${destinationPath}\`: ${reason}`, {cause: error});
+			};
+
+			entries = await pFilter(entries, async entry => {
+				const {destinationPath, resolvedDestinationPath} = resolveDestinationPaths(entry);
+
+				if (destinationPaths.has(resolvedDestinationPath)) {
+					return false;
+				}
+
+				destinationPaths.add(resolvedDestinationPath);
+
+				try {
+					await fs.lstat(resolvedDestinationPath);
+					return false;
+				} catch (error) {
+					if (error.code !== 'ENOENT') {
+						throw createIgnoreExistingError(entry, destinationPath, error);
+					}
+				}
+
+				return true;
+			}, {
 				concurrency: 1024,
 				signal: options.signal,
 			});
@@ -745,6 +788,15 @@ export default function cpy(
 			}
 		};
 
+		const reportSkippedCopy = (statusKey, entry, resolvedDestinationPath) => {
+			fileProgressHandler(statusKey, {
+				writtenBytes: 0,
+				percent: 1,
+				sourcePath: entry.path,
+				destinationPath: resolvedDestinationPath,
+			});
+		};
+
 		const copyFileMapper = async entry => {
 			const {destinationPath, resolvedDestinationPath} = resolveDestinationPaths(entry);
 
@@ -784,16 +836,23 @@ export default function cpy(
 				}
 			} catch (error) {
 				options.signal?.throwIfAborted();
+				if (shouldIgnoreExisting && (error.code === 'EEXIST' || error.code === 'EISDIR')) {
+					reportSkippedCopy(statusKey, entry, resolvedDestinationPath);
+					return;
+				}
+
 				throw new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${destinationPath}\`: ${error.message}`, {cause: error});
 			}
 
 			return destinationPath;
 		};
 
-		return pMap(entries, copyFileMapper, {
+		const results = await pMap(entries, copyFileMapper, {
 			concurrency,
 			signal: options.signal,
 		});
+
+		return results.filter(destinationPath => destinationPath !== undefined);
 	})();
 
 	promise.on = (_eventName, callback) => {
