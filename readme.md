@@ -2,8 +2,6 @@
 
 > Copy files
 
-**IMPORTANT:** This package has a lot of problems and I unfortunately don't have time to fix them. I would recommend against using this package until these problems are resolved. Help welcome (see the issue tracker) 🙏
-
 ## Why
 
 - Fast by [cloning](https://stackoverflow.com/questions/71629903/node-js-why-we-should-use-copyfile-ficlone-and-copyfile-ficlone-force-what-is) the files whenever possible.
