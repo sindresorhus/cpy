@@ -477,6 +477,7 @@ export default function cpy(
 	*/
 	const getEntries = async (patterns, ignorePatterns) => {
 		const entries = [];
+		const resolvedIgnorePatterns = ignorePatterns.map(pattern => resolveCopyPath(pattern, options.cwd));
 
 		for (const pattern of patterns) {
 			/**
@@ -491,7 +492,9 @@ export default function cpy(
 				throw new CpyError(`Cannot glob \`${pattern.originalPath}\`: ${error.message}`, {cause: error});
 			}
 
-			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath) && !isDynamicPattern(ignorePatterns)) {
+			const resolvedPatternPath = resolveCopyPath(pattern.originalPath, options.cwd);
+			const isIgnoredByStaticPattern = resolvedIgnorePatterns.some(ignorePattern => relativizeWithin(ignorePattern, resolvedPatternPath) !== undefined);
+			if (matches.length === 0 && !isDynamicPattern(pattern.originalPath) && !isIgnoredByStaticPattern && !isDynamicPattern(ignorePatterns)) {
 				throw new CpyError(`Cannot copy \`${pattern.originalPath}\`: the file doesn't exist`);
 			}
 
@@ -532,15 +535,15 @@ export default function cpy(
 		let patterns = expandPatternsWithBraceExpansion(rawPatterns)
 			.map(string => string.replaceAll('\\', '/'));
 		const sources = patterns.filter(item => !item.startsWith('!'));
-		const ignore = patterns.filter(item => item.startsWith('!'));
+		const ignorePatterns = patterns.filter(item => item.startsWith('!')).map(item => item.slice(1));
 
 		if (sources.length === 0 || !destination) {
 			throw new CpyError('`source` and `destination` required');
 		}
 
-		patterns = patterns.map(pattern => new GlobPattern(pattern, destination, {...options, ignore}));
+		patterns = sources.map(pattern => new GlobPattern(pattern, destination, {...options, ignore: ignorePatterns}));
 
-		entries = await getEntries(patterns, ignore);
+		entries = await getEntries(patterns, ignorePatterns);
 
 		const destinationPathByEntry = new Map();
 		const resolveDestinationPaths = entry => {

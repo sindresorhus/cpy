@@ -1715,6 +1715,66 @@ test('negative patterns', async () => {
 	assert.ok(!fs.existsSync(path.join(context.tmp, 'out/ignore.js')));
 });
 
+test('negative exact pattern does not throw for non-glob source', async () => {
+	fs.writeFileSync(path.join(context.tmp, 'foo.js'), 'console.log("foo");');
+	await assert.doesNotReject(cpy(['foo.js', '!foo.js'], path.join(context.tmp, 'out'), {cwd: context.tmp}));
+	assert.ok(!fs.existsSync(path.join(context.tmp, 'out/foo.js')));
+});
+
+test('negative exact pattern does not throw for equivalent non-glob source path variants', async () => {
+	fs.writeFileSync(path.join(context.tmp, 'foo.js'), 'console.log("foo");');
+	await assert.doesNotReject(cpy(['./foo.js', '!foo.js'], path.join(context.tmp, 'out'), {cwd: context.tmp}));
+	assert.ok(!fs.existsSync(path.join(context.tmp, 'out/foo.js')));
+});
+
+test('negative exact pattern does not throw for relative source and absolute negation', async () => {
+	const sourcePath = path.join(context.tmp, 'foo.js');
+	fs.writeFileSync(sourcePath, 'console.log("foo");');
+	await assert.doesNotReject(cpy(['foo.js', `!${sourcePath}`], path.join(context.tmp, 'out'), {cwd: context.tmp}));
+	assert.ok(!fs.existsSync(path.join(context.tmp, 'out/foo.js')));
+});
+
+test('negative exact pattern does not hide missing non-glob source for other files', async () => {
+	fs.writeFileSync(path.join(context.tmp, 'bar.js'), 'console.log("bar");');
+	await assert.rejects(cpy(['foo.js', '!bar.js'], path.join(context.tmp, 'out'), {cwd: context.tmp}), CpyError);
+});
+
+test('negative parent pattern does not throw for non-glob source', async () => {
+	fs.mkdirSync(path.join(context.tmp, 'source'));
+	fs.writeFileSync(path.join(context.tmp, 'source/file.js'), 'console.log("file");');
+	await assert.doesNotReject(cpy(['source/file.js', '!source'], path.join(context.tmp, 'out'), {cwd: context.tmp}));
+	assert.ok(!fs.existsSync(path.join(context.tmp, 'out/file.js')));
+});
+
+test('negative parent pattern does not throw for non-glob directory source', async () => {
+	fs.mkdirSync(path.join(context.tmp, 'source/nested'), {recursive: true});
+	fs.writeFileSync(path.join(context.tmp, 'source/nested/file.js'), 'console.log("file");');
+	await assert.doesNotReject(cpy(['source', '!source'], path.join(context.tmp, 'out'), {cwd: context.tmp}));
+	assert.ok(!fs.existsSync(path.join(context.tmp, 'out/source/nested/file.js')));
+});
+
+test('negative patterns should not copy files outside the positive pattern', async () => {
+	fs.mkdirSync(path.join(context.tmp, 'source'));
+	fs.mkdirSync(path.join(context.tmp, 'other'));
+	fs.mkdirSync(path.join(context.tmp, 'out'));
+	fs.writeFileSync(path.join(context.tmp, 'source/keep.js'), 'keep');
+	fs.writeFileSync(path.join(context.tmp, 'source/ignore.slim.js'), 'ignore');
+	fs.writeFileSync(path.join(context.tmp, 'other/should-not-be-copied.js'), 'no');
+	fs.writeFileSync(path.join(context.tmp, 'root-file.js'), 'no');
+
+	await cpy(['source/**', '!source/**/*.slim.*'], path.join(context.tmp, 'out'), {
+		cwd: context.tmp,
+	});
+
+	assert.strictEqual(
+		read(context.tmp, 'source/keep.js'),
+		read(context.tmp, 'out/keep.js'),
+	);
+	assert.ok(!fs.existsSync(path.join(context.tmp, 'out/ignore.slim.js')));
+	assert.ok(!fs.existsSync(path.join(context.tmp, 'out/should-not-be-copied.js')));
+	assert.ok(!fs.existsSync(path.join(context.tmp, 'out/root-file.js')));
+});
+
 test('recursive directory copying', async () => {
 	fs.mkdirSync(path.join(context.tmp, 'source'));
 	fs.mkdirSync(path.join(context.tmp, 'source/nested'));
