@@ -318,7 +318,7 @@ const computeToForGlob = ({entry, destination, options}) => {
 	let toPath = path.join(destination, relativePath);
 
 	// Guard: never copy a file into itself (can truncate under concurrency).
-	if (isSelfCopy(from, toPath, options.cwd)) {
+	if (!options.rename && isSelfCopy(from, toPath, options.cwd)) {
 		const alternativeRelativePath = relativizeWithin(baseB, entry.path);
 		const alternativeToPath = alternativeRelativePath
 			? path.join(destination, alternativeRelativePath)

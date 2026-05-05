@@ -1176,6 +1176,56 @@ test('rename file in same directory using function', async () => {
 	assert.strictEqual(read(context.tmp, 'hello.js'), 'console.log("hello");');
 });
 
+test('glob rename extension in same directory preserves structure', async () => {
+	writeFiles(context.tmp, {
+		'file.md': '# Hello',
+		'sub/nested.md': '# Nested',
+	});
+
+	await cpy(['./**/*.md'], './', {
+		cwd: context.tmp,
+		rename(source, destination) {
+			destination.extension = 'mdx';
+		},
+	});
+
+	assert.strictEqual(read(context.tmp, 'file.mdx'), '# Hello');
+	assert.strictEqual(read(context.tmp, 'file.md'), '# Hello');
+	assert.strictEqual(read(context.tmp, 'sub', 'nested.mdx'), '# Nested');
+	assert.strictEqual(read(context.tmp, 'sub', 'nested.md'), '# Nested');
+	assert.strictEqual(fs.existsSync(path.join(context.tmp, 'nested.mdx')), false, 'nested.mdx must not be at root');
+});
+
+test('glob string rename in same directory preserves structure', async () => {
+	writeFiles(context.tmp, {
+		'sub/nested.md': '# Nested',
+	});
+
+	await cpy(['./**/nested.md'], './', {
+		cwd: context.tmp,
+		rename: 'renamed.md',
+	});
+
+	assert.strictEqual(read(context.tmp, 'sub', 'renamed.md'), '# Nested');
+	assert.strictEqual(fs.existsSync(path.join(context.tmp, 'renamed.md')), false, 'renamed.md must not be at root');
+});
+
+test('glob rename to same name in same directory throws self-copy error', async () => {
+	writeFiles(context.tmp, {
+		'file.md': '# Hello',
+	});
+
+	await assert.rejects(
+		cpy(['./**/*.md'], './', {
+			cwd: context.tmp,
+			rename(source, destination) {
+				destination.extension = 'md';
+			},
+		}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+});
+
 test('flatten directory tree', async () => {
 	fs.mkdirSync(path.join(context.tmp, 'source'));
 	fs.mkdirSync(path.join(context.tmp, 'source', 'nested'));
