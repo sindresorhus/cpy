@@ -205,6 +205,8 @@ export type Options = {
 	/**
 	The given function is called whenever there is measurable progress.
 
+	Note: Progress reporting makes copying slower, as it bypasses the faster filesystem copy path. Only pass this when you use it.
+
 	@example
 	```
 	import cpy from 'cpy';

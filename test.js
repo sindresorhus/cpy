@@ -326,7 +326,15 @@ test('glob refuses self-copy when destination is current directory', async () =>
 test('do not overwrite', async () => {
 	fs.writeFileSync(path.join(context.tmp, 'license'), '');
 
-	await assert.rejects(cpy(['license'], context.tmp, {overwrite: false}));
+	// `ignoreExisting` skips on `error.code`, so assert the code and not only the rejection.
+	await assert.rejects(
+		cpy(['license'], context.tmp, {overwrite: false}),
+		error => {
+			expectError(CpyError, /EEXIST/)(error);
+			assert.strictEqual(error.code, 'EEXIST');
+			return true;
+		},
+	);
 
 	assert.strictEqual(read(context.tmp, 'license'), '');
 });
@@ -564,6 +572,29 @@ test('update skips when mtime and size match', async () => {
 	});
 
 	assert.strictEqual(read(destinationDirectory, 'file.txt'), 'diff');
+});
+
+test('update skips a file copied by an earlier run', async () => {
+	const sourceDirectory = path.join(context.tmp, 'source');
+	const destinationDirectory = path.join(context.tmp, 'destination');
+	fs.mkdirSync(sourceDirectory, {recursive: true});
+	const sourcePath = path.join(sourceDirectory, 'file.txt');
+	fs.writeFileSync(sourcePath, 'content');
+
+	// A whole millisecond, because `utimes` stores no more precision than that and `update` compares the two mtimes exactly.
+	const time = new Date('2020-01-05T00:00:00Z');
+	fs.utimesSync(sourcePath, time, time);
+
+	/*
+	The real-world use of `update`: copy, then copy again and expect nothing to happen.
+
+	This only works because the copy carries the source mtime over to the destination, so it pins that the default copy path preserves timestamps.
+	*/
+	const first = await cpy(['file.txt'], destinationDirectory, {cwd: sourceDirectory, update: true});
+	const second = await cpy(['file.txt'], destinationDirectory, {cwd: sourceDirectory, update: true});
+
+	assert.deepStrictEqual(first, [path.join(destinationDirectory, 'file.txt')]);
+	assert.deepStrictEqual(second, []);
 });
 
 test('update is ignored when overwrite is false', async () => {
@@ -1568,6 +1599,18 @@ test('returns destination path', async () => {
 	]);
 });
 
+test('returns resolved destination paths for a relative destination and a `cwd`', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	fs.mkdirSync(cwd);
+	fs.writeFileSync(path.join(cwd, 'foo.txt'), 'content');
+
+	// A relative destination resolves against `cwd`, so returning it unresolved would give a path that resolves against `process.cwd()` instead.
+	const to = await cpy(['*'], 'dest', {cwd});
+
+	assert.deepStrictEqual(to, [path.join(cwd, 'dest', 'foo.txt')]);
+	assert.strictEqual(read(to[0]), 'content');
+});
+
 test('dryRun returns destinations without copying', async () => {
 	const cwd = path.join(context.tmp, 'cwd');
 	fs.mkdirSync(cwd);
@@ -2282,3 +2325,298 @@ test('preserveTimestamps option', async () => {
 		assert.strictEqual(destinationStats.atime.getTime(), sourceStats.atime.getTime());
 	}
 });
+
+test('preserveTimestamps with a relative destination and a `cwd`', async () => {
+	const source = path.join(context.tmp, 'source');
+	fs.mkdirSync(source, {recursive: true});
+
+	const sourceFile = path.join(source, 'file.txt');
+	fs.writeFileSync(sourceFile, 'content');
+	const oldTime = new Date(2000, 0, 1);
+	fs.utimesSync(sourceFile, oldTime, oldTime);
+
+	// A relative destination resolves against `cwd`, not `process.cwd()`.
+	await cpy(['*.txt'], 'destination', {cwd: source, preserveTimestamps: true});
+
+	const destinationFile = path.join(source, 'destination', 'file.txt');
+	assert.strictEqual(read(destinationFile), 'content');
+	assert.strictEqual(fs.statSync(destinationFile).mtime.getTime(), oldTime.getTime());
+});
+
+// The mode and the timestamps come from `copy-file`, which applies them on both the streaming and the `fs.copyFile` path. `update` compares mtimes across runs, so pin them for the path a copy takes by default.
+test('preserves the file mode and timestamps', {skip: process.platform === 'win32'}, async () => {
+	const source = path.join(context.tmp, 'source');
+	fs.mkdirSync(source, {recursive: true});
+
+	const sourceFile = path.join(source, 'script.sh');
+	fs.writeFileSync(sourceFile, 'content');
+	fs.chmodSync(sourceFile, 0o755);
+	const oldTime = new Date(2000, 0, 1);
+	fs.utimesSync(sourceFile, oldTime, oldTime);
+
+	const destination = path.join(context.tmp, 'destination');
+	await cpy(['*.sh'], destination, {cwd: source});
+
+	const destinationFile = path.join(destination, 'script.sh');
+	assert.strictEqual(read(destinationFile), 'content');
+	assert.strictEqual(fs.statSync(destinationFile).mode, fs.statSync(sourceFile).mode);
+	assert.strictEqual(fs.statSync(destinationFile).mtime.getTime(), oldTime.getTime());
+});
+
+test('copies an empty file and reports it as complete', async () => {
+	const source = path.join(context.tmp, 'source');
+	fs.mkdirSync(source, {recursive: true});
+	fs.writeFileSync(path.join(source, 'empty.txt'), '');
+
+	const destination = path.join(context.tmp, 'destination');
+	let report;
+
+	// A zero-byte file makes the streaming path divide by zero when it computes a percentage, so pin both the file and the final event.
+	await cpy(['*.txt'], destination, {
+		cwd: source,
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	assert.strictEqual(read(destination, 'empty.txt'), '');
+	assert.strictEqual(report.completedFiles, 1);
+	assert.strictEqual(report.completedSize, 0);
+	assert.strictEqual(report.percent, 1);
+});
+
+test('copies a large file byte-identically', async () => {
+	// A copy without a progress consumer goes through `fs.copyFile` instead of a stream. The path it takes is not observable, so this only pins that the bytes survive it.
+	const content = crypto.randomBytes(300_000);
+	const source = path.join(context.tmp, 'source');
+	fs.mkdirSync(source, {recursive: true});
+	fs.writeFileSync(path.join(source, 'big.bin'), content);
+
+	const destination = path.join(context.tmp, 'destination');
+	await cpy(['*.bin'], destination, {cwd: source});
+
+	assert.ok(fs.readFileSync(path.join(destination, 'big.bin')).equals(content));
+});
+
+/*
+The destination can be the same file as the source without being the same path.
+
+`bigContent` is the file size from the bug report, and it matters: a self-copy truncates the source to the first 64 KB stream chunk, so the content has to be larger than that.
+
+The rejection is what each test proves. The truncation itself is a race between the read stream and the write stream opening, so it only happens about one run in three, and asserting on the source size alone would be flaky.
+*/
+const bigContent = 'a'.repeat(114_823);
+
+test('refuses to copy when the destination is a symlink to the source file', {skip: process.platform === 'win32'}, async () => {
+	const source = path.join(context.tmp, 'source');
+	const destination = path.join(context.tmp, 'destination');
+	fs.mkdirSync(source, {recursive: true});
+	fs.mkdirSync(destination, {recursive: true});
+
+	const sourceFile = path.join(source, 'big.css');
+	const destinationLink = path.join(destination, 'big.css');
+	fs.writeFileSync(sourceFile, bigContent);
+	fs.symlinkSync(sourceFile, destinationLink);
+
+	await assert.rejects(
+		cpy(['*.css'], destination, {cwd: source}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	// A dry run must refuse too, so it reports what a real run would do.
+	await assert.rejects(
+		cpy(['*.css'], destination, {cwd: source, dryRun: true}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	assert.strictEqual(fs.readFileSync(sourceFile, 'utf8'), bigContent);
+	assert.ok(fs.lstatSync(destinationLink).isSymbolicLink());
+});
+
+test('refuses to copy when the destination directory is a symlink to the source directory', {skip: process.platform === 'win32'}, async () => {
+	const source = path.join(context.tmp, 'source');
+	fs.mkdirSync(path.join(source, 'nested'), {recursive: true});
+
+	const sourceFile = path.join(source, 'nested', 'big.css');
+	fs.writeFileSync(sourceFile, bigContent);
+
+	const destination = path.join(context.tmp, 'link');
+	fs.symlinkSync(source, destination);
+
+	await assert.rejects(
+		cpy(['**/*.css'], destination, {cwd: source}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	assert.strictEqual(fs.readFileSync(sourceFile, 'utf8'), bigContent);
+});
+
+test('refuses to copy when the destination is a hard link to the source file', async () => {
+	const source = path.join(context.tmp, 'source');
+	const destination = path.join(context.tmp, 'destination');
+	fs.mkdirSync(source, {recursive: true});
+	fs.mkdirSync(destination, {recursive: true});
+
+	const sourceFile = path.join(source, 'big.css');
+	fs.writeFileSync(sourceFile, bigContent);
+	fs.linkSync(sourceFile, path.join(destination, 'big.css'));
+
+	await assert.rejects(
+		cpy(['*.css'], destination, {cwd: source}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	// A progress consumer streams the copy instead of using `fs.copyFile`, which is the case that truncates the source.
+	await assert.rejects(
+		cpy(['*.css'], destination, {cwd: source}).on('progress', () => {}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	assert.strictEqual(fs.readFileSync(sourceFile, 'utf8'), bigContent);
+});
+
+test('refuses to copy when the destination is the same file and `overwrite` is false', async () => {
+	const source = path.join(context.tmp, 'source');
+	const destination = path.join(context.tmp, 'destination');
+	fs.mkdirSync(source, {recursive: true});
+	fs.mkdirSync(destination, {recursive: true});
+
+	const sourceFile = path.join(source, 'big.css');
+	fs.writeFileSync(sourceFile, bigContent);
+	fs.linkSync(sourceFile, path.join(destination, 'big.css'));
+
+	// Unlike `update` and `ignoreExisting`, `overwrite` keeps the entry, so the guard runs and rejects.
+	await assert.rejects(
+		cpy(['*.css'], destination, {cwd: source, overwrite: false}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	assert.strictEqual(fs.readFileSync(sourceFile, 'utf8'), bigContent);
+});
+
+test('refuses to copy when the destination is the source directory in a different case', async t => {
+	const source = path.join(context.tmp, 'source');
+	fs.mkdirSync(source, {recursive: true});
+
+	const destination = path.join(context.tmp, 'SOURCE');
+	if (!fs.existsSync(destination)) {
+		t.skip('Case-sensitive filesystem');
+		return;
+	}
+
+	const sourceFile = path.join(source, 'big.css');
+	fs.writeFileSync(sourceFile, bigContent);
+
+	await assert.rejects(
+		cpy(['*.css'], destination, {cwd: source}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	assert.strictEqual(fs.readFileSync(sourceFile, 'utf8'), bigContent);
+});
+
+test('copies when the destination is a symlink to a different file', {skip: process.platform === 'win32'}, async () => {
+	const source = path.join(context.tmp, 'source');
+	const destination = path.join(context.tmp, 'destination');
+	const other = path.join(context.tmp, 'other');
+	fs.mkdirSync(source, {recursive: true});
+	fs.mkdirSync(destination, {recursive: true});
+	fs.mkdirSync(other, {recursive: true});
+
+	fs.writeFileSync(path.join(source, 'big.css'), bigContent);
+	fs.writeFileSync(path.join(other, 'target.css'), 'old');
+	fs.symlinkSync(path.join(other, 'target.css'), path.join(destination, 'big.css'));
+
+	await cpy(['*.css'], destination, {cwd: source});
+
+	// The copy writes through the symlink, so the target receives the content and the link stays a link.
+	assert.strictEqual(read(other, 'target.css'), bigContent);
+	assert.ok(fs.lstatSync(path.join(destination, 'big.css')).isSymbolicLink());
+});
+
+test('copies when the destination is a broken symlink', {skip: process.platform === 'win32'}, async () => {
+	const source = path.join(context.tmp, 'source');
+	const destination = path.join(context.tmp, 'destination');
+	fs.mkdirSync(source, {recursive: true});
+	fs.mkdirSync(destination, {recursive: true});
+
+	fs.writeFileSync(path.join(source, 'big.css'), bigContent);
+	// The identity check cannot stat a dangling link, and must treat that as "not the source" rather than refusing.
+	fs.symlinkSync(path.join(context.tmp, 'missing.css'), path.join(destination, 'big.css'));
+
+	await cpy(['*.css'], destination, {cwd: source});
+
+	assert.strictEqual(read(context.tmp, 'missing.css'), bigContent);
+});
+
+test('refuses to copy when a rename only changes the case of the filename', async t => {
+	const source = path.join(context.tmp, 'source');
+	fs.mkdirSync(source, {recursive: true});
+
+	const sourceFile = path.join(source, 'big.css');
+	fs.writeFileSync(sourceFile, bigContent);
+
+	if (!fs.existsSync(path.join(source, 'BIG.css'))) {
+		t.skip('Case-sensitive filesystem');
+		return;
+	}
+
+	// Recasing a filename in place is a copy onto the same file, and the paths differ, so only the identity check catches it.
+	await assert.rejects(
+		cpy(['big.css'], source, {cwd: source, rename: 'BIG.css'}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	assert.strictEqual(fs.readFileSync(sourceFile, 'utf8'), bigContent);
+});
+
+test('copying twice in a row is not mistaken for a self-copy', async () => {
+	// `fs.copyFile` may reflink the destination, so make sure the identity check still sees two distinct files.
+	const source = path.join(context.tmp, 'source');
+	fs.mkdirSync(source, {recursive: true});
+	fs.writeFileSync(path.join(source, 'big.css'), bigContent);
+
+	const destination = path.join(context.tmp, 'destination');
+	await cpy(['*.css'], destination, {cwd: source});
+	await cpy(['*.css'], destination, {cwd: source});
+
+	assert.strictEqual(read(destination, 'big.css'), bigContent);
+});
+
+test('refuses to copy when a rename lands on the source file', async () => {
+	const source = path.join(context.tmp, 'source');
+	fs.mkdirSync(source, {recursive: true});
+
+	const sourceFile = path.join(source, 'big.css');
+	fs.writeFileSync(sourceFile, bigContent);
+	fs.linkSync(sourceFile, path.join(source, 'link.css'));
+
+	// The rename decides the destination, so the check has to run after it, not on the original name.
+	await assert.rejects(
+		cpy(['link.css'], source, {cwd: source, rename: 'big.css'}),
+		expectError(CpyError, /Refusing to copy to itself/),
+	);
+
+	assert.strictEqual(fs.readFileSync(sourceFile, 'utf8'), bigContent);
+});
+
+/*
+`update` and `ignoreExisting` drop the entry before the copy runs, so they skip a same-file destination instead of rejecting like every other option does.
+
+The source survives either way, which is what matters. These tests pin that, so the divergence stays deliberate.
+*/
+for (const option of ['update', 'ignoreExisting']) {
+	test(`skips instead of refusing when the destination is the same file and \`${option}\` is set`, async () => {
+		const source = path.join(context.tmp, 'source');
+		const destination = path.join(context.tmp, 'destination');
+		fs.mkdirSync(source, {recursive: true});
+		fs.mkdirSync(destination, {recursive: true});
+
+		const sourceFile = path.join(source, 'big.css');
+		fs.writeFileSync(sourceFile, bigContent);
+		fs.linkSync(sourceFile, path.join(destination, 'big.css'));
+
+		assert.deepStrictEqual(await cpy(['*.css'], destination, {cwd: source, [option]: true}), []);
+		assert.strictEqual(fs.readFileSync(sourceFile, 'utf8'), bigContent);
+	});
+}

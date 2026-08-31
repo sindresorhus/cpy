@@ -264,6 +264,37 @@ const resolveCopyPath = (filePath, cwd) => path.isAbsolute(filePath)
 
 const isSelfCopy = (from, to, cwd = process.cwd()) => resolveCopyPath(to, cwd) === resolveCopyPath(from, cwd);
 
+/**
+Detect a destination that is the same file as the source even though the paths differ, for example through a symlink, a hard link, or a case-insensitive filesystem.
+
+Comparing paths alone is not enough, and copying a file onto itself truncates it.
+
+Best effort, so it complements the path comparison in `isSelfCopy` rather than replacing it.
+
+@param {string} source
+@param {string} destination
+@returns {Promise<boolean>}
+*/
+const isSameFileOnDisk = async (source, destination) => {
+	try {
+		/*
+		`bigint` because inode numbers can exceed the safe integer range, and two different files must never round to the same value.
+
+		The destination is stat'd first on purpose. It usually does not exist yet, and throwing there keeps the common case at a single syscall, so do not turn this into a `Promise.all`.
+		*/
+		const destinationStats = await fs.stat(destination, {bigint: true});
+		const sourceStats = await fs.stat(source, {bigint: true});
+
+		// Best effort: some Windows filesystems report the inode number as 0, and there is nothing to compare then.
+		return destinationStats.ino !== 0n
+			&& destinationStats.dev === sourceStats.dev
+			&& destinationStats.ino === sourceStats.ino;
+	} catch {
+		// A missing or unreadable destination is not the source. A real problem surfaces when the copy runs.
+		return false;
+	}
+};
+
 const relativizeWithin = (base, file) => {
 	const relativePath = path.relative(base, file);
 	if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
@@ -565,7 +596,11 @@ export default function cpy(
 				rename: options.rename,
 			});
 
-			// Check for self-copy after rename has been applied
+			/*
+			Check for self-copy after rename has been applied.
+
+			`isSameFileOnDisk` in `copyFileMapper` catches strictly more than this, but it gives up when the filesystem reports no inode number, so keep this path comparison as the guard that works everywhere. It also runs before the entries are filtered, so `update` and `ignoreExisting` still reject an obvious self-copy.
+			*/
 			if (isSelfCopy(entry.path, destinationPath, options.cwd)) {
 				throw new CpyError(`Refusing to copy to itself: \`${entry.path}\``);
 			}
@@ -732,21 +767,23 @@ export default function cpy(
 
 		options.signal?.throwIfAborted();
 
+		const emitProgress = progressData => {
+			if (options.onProgress) {
+				options.onProgress(progressData);
+			}
+
+			progressEmitter.emit('progress', progressData);
+		};
+
 		if (entries.length === 0) {
-			const progressData = {
+			emitProgress({
 				totalFiles: 0,
 				percent: 1,
 				completedFiles: 0,
 				completedSize: 0,
 				sourcePath: '',
 				destinationPath: '',
-			};
-
-			if (options.onProgress) {
-				options.onProgress(progressData);
-			}
-
-			progressEmitter.emit('progress', progressData);
+			});
 		}
 
 		/**
@@ -774,22 +811,23 @@ export default function cpy(
 					percent: event.percent,
 				});
 
-				const progressData = {
+				emitProgress({
 					totalFiles: entries.length,
 					percent: completedFiles / entries.length,
 					completedFiles,
 					completedSize,
 					sourcePath: event.sourcePath,
 					destinationPath: event.destinationPath,
-				};
-
-				if (options.onProgress) {
-					options.onProgress(progressData);
-				}
-
-				progressEmitter.emit('progress', progressData);
+				});
 			}
 		};
+
+		/*
+		Progress reporting forces `copy-file` to stream the file instead of using the much faster `fs.copyFile`, so only ask for it when someone is listening.
+
+		Decided once, so every file is treated the same. A `progress` listener therefore has to be attached synchronously, which is how it is documented.
+		*/
+		const hasProgressConsumer = typeof options.onProgress === 'function' || progressEmitter.listenerCount('progress') > 0;
 
 		const reportSkippedCopy = (statusKey, entry, resolvedDestinationPath) => {
 			fileProgressHandler(statusKey, {
@@ -803,39 +841,34 @@ export default function cpy(
 		const copyFileMapper = async entry => {
 			const {destinationPath, resolvedDestinationPath} = resolveDestinationPaths(entry);
 
-			if (options.dryRun) {
-				completedFiles++;
-				const progressData = {
-					totalFiles: entries.length,
-					percent: completedFiles / entries.length,
-					completedFiles,
-					completedSize,
-					sourcePath: entry.path,
-					destinationPath: resolvedDestinationPath,
-				};
-
-				if (options.onProgress) {
-					options.onProgress(progressData);
-				}
-
-				progressEmitter.emit('progress', progressData);
-				return resolvedDestinationPath;
+			// Before the `dryRun` return below, so a dry run reports what a real run would do.
+			if (await isSameFileOnDisk(entry.path, resolvedDestinationPath)) {
+				// Show both paths, as the whole point is that they look different but are the same file.
+				throw new CpyError(`Refusing to copy to itself: \`${entry.path}\` is the same file as \`${resolvedDestinationPath}\``);
 			}
 
 			const statusKey = `${entry.path}\0${destinationPath}`;
 
+			if (options.dryRun) {
+				reportSkippedCopy(statusKey, entry, resolvedDestinationPath);
+				return resolvedDestinationPath;
+			}
+
 			try {
 				await copyFile(entry.path, destinationPath, {
 					...options,
-					onProgress(event) {
-						fileProgressHandler(statusKey, event);
-					},
+					onProgress: hasProgressConsumer
+						? event => {
+							fileProgressHandler(statusKey, event);
+						}
+						: undefined,
 				});
 
 				if (options.preserveTimestamps) {
 					options.signal?.throwIfAborted();
 					const stats = await fs.stat(entry.path);
-					await fs.utimes(destinationPath, stats.atime, stats.mtime);
+					// The resolved path, as `destinationPath` can be relative, and `fs` resolves it against `process.cwd()` rather than `options.cwd`.
+					await fs.utimes(resolvedDestinationPath, stats.atime, stats.mtime);
 				}
 			} catch (error) {
 				options.signal?.throwIfAborted();
@@ -847,7 +880,8 @@ export default function cpy(
 				throw new CpyError(`Cannot copy from \`${entry.relativePath}\` to \`${destinationPath}\`: ${error.message}`, {cause: error});
 			}
 
-			return destinationPath;
+			// The resolved path, so the return value matches `dryRun` and stays usable when `destinationPath` is relative to `cwd` rather than to `process.cwd()`.
+			return resolvedDestinationPath;
 		};
 
 		const results = await pMap(entries, copyFileMapper, {

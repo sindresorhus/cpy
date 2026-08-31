@@ -201,6 +201,8 @@ Type: `Function`
 
 The given function is called whenever there is measurable progress.
 
+Note: Progress reporting makes copying slower, as it bypasses the faster filesystem copy path. Only pass this when you use it.
+
 ```js
 import cpy from 'cpy';
 
@@ -318,6 +320,9 @@ await cpy(source, destination, {
 	}
 });
 ```
+
+> [!NOTE]
+> Progress reporting makes copying slower, as it bypasses the faster filesystem copy path. Only add a progress handler when you use it.
 
 ### Progress object
 
