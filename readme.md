@@ -62,6 +62,8 @@ Files to copy.
 
 If any of the files do not exist, an error will be thrown (does not apply to globs).
 
+When multiple source files resolve to the same destination path, for example with overlapping globs, `flat`, or `rename`, the destination is written once and the last source wins. The `ignoreExisting` option keeps the first source instead, and `update` keeps the newest unless `overwrite` is `false`, which disables `update`.
+
 #### destination
 
 Type: `string`

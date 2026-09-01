@@ -295,6 +295,19 @@ const isSameFileOnDisk = async (source, destination) => {
 	}
 };
 
+/**
+Refuse a copy whose destination is the same file on disk as the source, which would truncate the source.
+
+@param {string} sourcePath
+@param {string} resolvedDestinationPath
+*/
+const assertNotSameFileOnDisk = async (sourcePath, resolvedDestinationPath) => {
+	if (await isSameFileOnDisk(sourcePath, resolvedDestinationPath)) {
+		// Show both paths, as the whole point is that they look different but are the same file.
+		throw new CpyError(`Refusing to copy to itself: \`${sourcePath}\` is the same file as \`${resolvedDestinationPath}\``);
+	}
+};
+
 const relativizeWithin = (base, file) => {
 	const relativePath = path.relative(base, file);
 	if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
@@ -673,15 +686,15 @@ export default function cpy(
 				};
 			});
 
-			const entryByDestinationPath = new Map();
+			const firstEntryByDestinationPath = new Map();
 			for (const entryData of entryDataList) {
-				if (!entryByDestinationPath.has(entryData.resolvedDestinationPath)) {
-					entryByDestinationPath.set(entryData.resolvedDestinationPath, entryData.entry);
+				if (!firstEntryByDestinationPath.has(entryData.resolvedDestinationPath)) {
+					firstEntryByDestinationPath.set(entryData.resolvedDestinationPath, entryData.entry);
 				}
 			}
 
 			const getDestinationState = async destinationPath => {
-				const entry = entryByDestinationPath.get(destinationPath);
+				const entry = firstEntryByDestinationPath.get(destinationPath);
 
 				let stats;
 				try {
@@ -765,6 +778,34 @@ export default function cpy(
 			entries = entries.filter(entry => selectedEntries.has(entry));
 		}
 
+		/*
+		Collapse entries that resolve to the same destination, so overlapping patterns that match the same file, or `flat` and `rename` collisions, never write to one path at the same time.
+
+		The last entry wins, which is what a sequential copy would leave behind, but it keeps the position of the first one so the returned paths stay in pattern order.
+
+		`ignoreExisting` and `update` already picked a single entry per destination above, with rules of their own, hence running after them.
+
+		Best effort, as it compares paths: two destinations that differ only in case, or that meet through a symlink, are still separate keys and are left to race. Detecting those would mean a `stat` for every destination.
+		*/
+		if (entries.length > 1) {
+			const lastEntryByDestinationPath = new Map();
+
+			for (const entry of entries) {
+				lastEntryByDestinationPath.set(resolveDestinationPaths(entry).resolvedDestinationPath, entry);
+			}
+
+			const winningEntries = new Set(lastEntryByDestinationPath.values());
+
+			/*
+			A dropped entry never reaches `copyFileMapper`, so its same-file-on-disk guard would never run and the winner would silently truncate that source through a symlink or a hard link. Only the losers of a collision are stat'd, so a run without collisions pays nothing.
+			*/
+			await Promise.all(entries
+				.filter(entry => !winningEntries.has(entry))
+				.map(entry => assertNotSameFileOnDisk(entry.path, resolveDestinationPaths(entry).resolvedDestinationPath)));
+
+			entries = [...winningEntries];
+		}
+
 		options.signal?.throwIfAborted();
 
 		const emitProgress = progressData => {
@@ -842,10 +883,7 @@ export default function cpy(
 			const {destinationPath, resolvedDestinationPath} = resolveDestinationPaths(entry);
 
 			// Before the `dryRun` return below, so a dry run reports what a real run would do.
-			if (await isSameFileOnDisk(entry.path, resolvedDestinationPath)) {
-				// Show both paths, as the whole point is that they look different but are the same file.
-				throw new CpyError(`Refusing to copy to itself: \`${entry.path}\` is the same file as \`${resolvedDestinationPath}\``);
-			}
+			await assertNotSameFileOnDisk(entry.path, resolvedDestinationPath);
 
 			const statusKey = `${entry.path}\0${destinationPath}`;
 

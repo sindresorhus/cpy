@@ -292,7 +292,7 @@ export type ProgressEmitter = {
 /**
 Copy files.
 
-@param source - Files to copy. If any of the files do not exist, an error will be thrown (does not apply to globs).
+@param source - Files to copy. If any of the files do not exist, an error will be thrown (does not apply to globs). When multiple source files resolve to the same destination path, for example with overlapping globs, `flat`, or `rename`, the destination is written once and the last source wins. The `ignoreExisting` option keeps the first source instead, and `update` keeps the newest unless `overwrite` is `false`, which disables `update`.
 @param destination - Destination directory.
 @param options - In addition to the options defined here, options are passed to [globby](https://github.com/sindresorhus/globby#options). Note: Dotfiles are excluded by default. Set `dot: true` to include them.
 

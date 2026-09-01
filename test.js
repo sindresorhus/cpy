@@ -2620,3 +2620,372 @@ for (const option of ['update', 'ignoreExisting']) {
 		assert.strictEqual(fs.readFileSync(sourceFile, 'utf8'), bigContent);
 	});
 }
+
+test('de-duplicates entries that resolve to the same destination', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {'file.txt': 'content'});
+
+	const results = await cpy(['**/*', '**/*.*'], destination, {cwd});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	assert.strictEqual(read(destination, 'file.txt'), 'content');
+});
+
+test('reports progress once for entries that share a destination', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {'file.txt': 'content'});
+
+	let report;
+	await cpy(['**/*', '**/*.*'], destination, {
+		cwd,
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	assert.strictEqual(report.totalFiles, 1);
+	assert.strictEqual(report.completedFiles, 1);
+	assert.strictEqual(report.percent, 1);
+});
+
+test('de-duplicates entries that share a destination when `dryRun` is set', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {'file.txt': 'content'});
+
+	let report;
+	const results = await cpy(['**/*', '**/*.*'], destination, {
+		cwd,
+		dryRun: true,
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	assert.strictEqual(report.totalFiles, 1);
+	assert.strictEqual(report.completedFiles, 1);
+	assert.strictEqual(report.percent, 1);
+});
+
+/*
+The sizes differ and are well above the 64 KB stream chunk, so a destination written by both sources at once would be detectable instead of just being one of the two.
+*/
+test('the last entry wins when different sources share a destination', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	const firstContent = 'a'.repeat(200_000);
+	const secondContent = 'b'.repeat(100_000);
+	writeFiles(cwd, {
+		'first/file.txt': firstContent,
+		'second/file.txt': secondContent,
+	});
+
+	const results = await cpy(['first/file.txt', 'second/file.txt'], destination, {cwd, flat: true});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	assert.strictEqual(read(destination, 'file.txt'), secondContent);
+});
+
+test('the last entry wins when `rename` makes sources share a destination', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {
+		'first.txt': 'first',
+		'second.txt': 'second',
+	});
+
+	const results = await cpy(['first.txt', 'second.txt'], destination, {cwd, rename: 'same.txt'});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'same.txt')]);
+	assert.strictEqual(read(destination, 'same.txt'), 'second');
+});
+
+test('overlapping patterns do not fail with `overwrite: false`', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {'file.txt': 'content'});
+
+	const results = await cpy(['**/*', '**/*.*'], destination, {cwd, overwrite: false});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	assert.strictEqual(read(destination, 'file.txt'), 'content');
+});
+
+test('de-duplicates every destination when overlapping patterns match a whole tree', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {
+		'one.txt': 'one',
+		'nested/two.txt': 'two',
+		'nested/deep/three.txt': 'three',
+	});
+
+	const results = await cpy(['**/*', '**/*.*'], destination, {cwd});
+
+	// Sorted, as the order the glob walks the tree in is up to the platform.
+	assert.deepStrictEqual(results.toSorted(), [
+		path.join(destination, 'nested/deep/three.txt'),
+		path.join(destination, 'nested/two.txt'),
+		path.join(destination, 'one.txt'),
+	].toSorted());
+	assert.strictEqual(read(destination, 'nested/deep/three.txt'), 'three');
+});
+
+test('keeps entries that resolve to different destinations', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {'source/file.txt': 'content'});
+
+	// The glob is relative to its own parent, the explicit path to the `cwd`, so these two land in different places.
+	const results = await cpy(['source/*.txt', 'source/file.txt'], destination, {cwd});
+
+	assert.deepStrictEqual(results, [
+		path.join(destination, 'file.txt'),
+		path.join(destination, 'source/file.txt'),
+	]);
+});
+
+test('a de-duplicated destination keeps the position of the first entry that claimed it', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {
+		'one/shared.txt': 'from one',
+		'two/middle.txt': 'from two',
+		'three/shared.txt': 'from three',
+		'four/unique.txt': 'from four',
+	});
+
+	const results = await cpy([
+		'one/shared.txt',
+		'two/middle.txt',
+		'three/shared.txt',
+		'four/unique.txt',
+	], destination, {cwd, flat: true});
+
+	assert.deepStrictEqual(results, [
+		path.join(destination, 'shared.txt'),
+		path.join(destination, 'middle.txt'),
+		path.join(destination, 'unique.txt'),
+	]);
+	assert.strictEqual(read(destination, 'shared.txt'), 'from three');
+});
+
+test('the last entry wins when globs collide under `flat`', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {
+		'first/file.txt': 'first',
+		'second/file.txt': 'second',
+	});
+
+	const results = await cpy(['first/*.txt', 'second/*.txt'], destination, {cwd, flat: true});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	assert.strictEqual(read(destination, 'file.txt'), 'second');
+});
+
+test('`filter` sees colliding entries before they are de-duplicated', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {
+		'first/file.txt': 'first',
+		'second/file.txt': 'second',
+		'third/file.txt': 'third',
+	});
+
+	const filtered = [];
+	// Three sources, so two of them still collide once the filter has dropped the last one.
+	const results = await cpy(['first/file.txt', 'second/file.txt', 'third/file.txt'], destination, {
+		cwd,
+		flat: true,
+		filter(entry) {
+			filtered.push(entry.relativePath);
+			return !entry.relativePath.startsWith(`third${path.sep}`);
+		},
+	});
+
+	assert.deepStrictEqual(filtered, [
+		path.join('first', 'file.txt'),
+		path.join('second', 'file.txt'),
+		path.join('third', 'file.txt'),
+	]);
+	// The winner is the last entry that survived the filter, not the last match.
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	assert.strictEqual(read(destination, 'file.txt'), 'second');
+});
+
+test('`preserveTimestamps` uses the winning source when destinations collide', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	const firstContent = 'a'.repeat(200_000);
+	const secondContent = 'b'.repeat(100_000);
+	writeFiles(cwd, {
+		'first/file.txt': firstContent,
+		'second/file.txt': secondContent,
+	});
+
+	const oldTime = new Date(2000, 0, 1);
+	fs.utimesSync(path.join(cwd, 'first/file.txt'), oldTime, oldTime);
+	const winnerStats = fs.statSync(path.join(cwd, 'second/file.txt'));
+
+	const results = await cpy(['first/file.txt', 'second/file.txt'], destination, {cwd, flat: true, preserveTimestamps: true});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	const destinationStats = fs.statSync(path.join(destination, 'file.txt'));
+	assert.strictEqual(destinationStats.mtime.getTime(), winnerStats.mtime.getTime());
+	// The size too, as without the de-duplication the mtime alone was decided by whichever `utimes` landed last.
+	assert.strictEqual(destinationStats.size, secondContent.length);
+});
+
+test('`dryRun` reports one path and writes nothing when destinations collide', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {
+		'first/file.txt': 'first',
+		'second/file.txt': 'second',
+	});
+
+	const results = await cpy(['first/file.txt', 'second/file.txt'], destination, {cwd, flat: true, dryRun: true});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	assert.strictEqual(fs.existsSync(destination), false);
+});
+
+test('counts distinct destinations in progress when only some entries collide', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {
+		'unique.txt': 'unique',
+		'first/file.txt': 'first',
+		'second/file.txt': 'second',
+	});
+
+	let report;
+	// `unique.txt` keeps its own destination, the other two collide on `file.txt`.
+	const results = await cpy(['unique.txt', 'first/file.txt', 'second/file.txt'], destination, {
+		cwd,
+		flat: true,
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	assert.deepStrictEqual(results, [
+		path.join(destination, 'unique.txt'),
+		path.join(destination, 'file.txt'),
+	]);
+	assert.strictEqual(report.totalFiles, 2);
+	assert.strictEqual(report.completedFiles, 2);
+	assert.strictEqual(report.percent, 1);
+	assert.strictEqual(read(destination, 'file.txt'), 'second');
+});
+
+/*
+`completedSize` is the field a collision damaged most, as the status is keyed on source and destination, so two entries writing to one path counted their bytes twice. This uses the `progress` event rather than `onProgress`, as both satisfy `hasProgressConsumer` and only the option was covered.
+*/
+test('counts the winning source once in `completedSize` when destinations collide', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	const secondContent = 'b'.repeat(100_000);
+	writeFiles(cwd, {
+		'first/file.txt': 'a'.repeat(200_000),
+		'second/file.txt': secondContent,
+	});
+
+	let report;
+	await cpy(['first/file.txt', 'second/file.txt'], destination, {cwd, flat: true})
+		.on('progress', event => {
+			report = event;
+		});
+
+	assert.strictEqual(report.completedSize, secondContent.length);
+	assert.strictEqual(report.totalFiles, 1);
+	assert.strictEqual(report.percent, 1);
+});
+
+test('`overwrite: false` reports the winning source when the colliding destination exists', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {
+		'first/file.txt': 'first',
+		'second/file.txt': 'second',
+	});
+	writeFiles(destination, {'file.txt': 'original'});
+
+	// Which source the `EEXIST` names used to depend on which of the two writers lost the race.
+	await assert.rejects(
+		cpy(['first/file.txt', 'second/file.txt'], destination, {cwd, flat: true, overwrite: false}),
+		error => {
+			assert.match(error.message, /second/);
+			assert.doesNotMatch(error.message, /first/);
+			return true;
+		},
+	);
+
+	assert.strictEqual(read(destination, 'file.txt'), 'original');
+});
+
+/*
+`ignoreExisting` and `update` each pick a single entry per destination with rules of their own, so the collision pass is already a no-op by the time it runs. These guard that it stays one, rather than overriding their choice with the last entry.
+*/
+test('`ignoreExisting` still keeps the first entry when overlapping patterns collide', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {
+		'first/file.txt': 'first',
+		'second/file.txt': 'second',
+	});
+
+	const results = await cpy(['first/file.txt', 'second/file.txt'], destination, {cwd, flat: true, ignoreExisting: true});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	assert.strictEqual(read(destination, 'file.txt'), 'first');
+});
+
+test('`update` still copies once when overlapping patterns match the same file', async () => {
+	const cwd = path.join(context.tmp, 'cwd');
+	const destination = path.join(context.tmp, 'destination');
+	writeFiles(cwd, {'file.txt': 'newer'});
+	writeFiles(destination, {'file.txt': 'older'});
+
+	const oldTime = new Date(2000, 0, 1);
+	fs.utimesSync(path.join(destination, 'file.txt'), oldTime, oldTime);
+
+	const results = await cpy(['**/*', '**/*.*'], destination, {cwd, update: true});
+
+	assert.deepStrictEqual(results, [path.join(destination, 'file.txt')]);
+	assert.strictEqual(read(destination, 'file.txt'), 'newer');
+});
+
+/*
+The de-duplication drops the losing entry before `copyFileMapper` runs, so the losing source would never reach the same-file-on-disk guard and the winner would truncate it.
+*/
+for (const linkType of ['hard link', 'symlink']) {
+	test(`refuses to copy when the destination is a ${linkType} to a source that loses the de-duplication`, {skip: linkType === 'symlink' && process.platform === 'win32'}, async () => {
+		const cwd = path.join(context.tmp, 'cwd');
+		const destination = path.join(context.tmp, 'destination');
+		writeFiles(cwd, {
+			'first/file.txt': bigContent,
+			'second/file.txt': 'second',
+		});
+		fs.mkdirSync(destination, {recursive: true});
+
+		const losingSource = path.join(cwd, 'first/file.txt');
+		const destinationFile = path.join(destination, 'file.txt');
+		if (linkType === 'hard link') {
+			fs.linkSync(losingSource, destinationFile);
+		} else {
+			fs.symlinkSync(losingSource, destinationFile);
+		}
+
+		await assert.rejects(
+			cpy(['first/file.txt', 'second/file.txt'], destination, {cwd, flat: true}),
+			expectError(CpyError, /Refusing to copy to itself/),
+		);
+
+		assert.strictEqual(fs.readFileSync(losingSource, 'utf8'), bigContent);
+	});
+}
